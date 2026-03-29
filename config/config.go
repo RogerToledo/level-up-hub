@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"strconv"
 	"sync"
 
 	"github.com/caarlos0/env/v10"
@@ -16,6 +15,7 @@ type Config struct {
 	Env       string `env:"ENV" envDefault:"dev"`
 	MaxConns  int    `env:"MAX_CONNS" envDefault:"10"`
 	MinConns  int    `env:"MIN_CONNS" envDefault:"1"`
+	JWTSecret string `env:"JWT_SECRET" envDefault:"supersecretkey"`
 }
 
 var (
@@ -37,12 +37,4 @@ func LoadConfig() *Config {
 
 	})
 	return cfg
-}
-
-func parseInt(s string) int {
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		return 0
-	}
-	return val
 }

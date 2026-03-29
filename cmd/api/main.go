@@ -6,8 +6,11 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/me/level-up-hub/internal/config"
+	"github.com/me/level-up-hub/internal/account"
+	"github.com/me/level-up-hub/config"
 	"github.com/me/level-up-hub/internal/database"
+	"github.com/me/level-up-hub/internal/repository"
+	"github.com/me/level-up-hub/routes"
 )
 
 func main() {
@@ -27,6 +30,15 @@ func main() {
 
 	fmt.Printf("Connected to %s pool\n", cfg.Env)
 
-	r := gin.Default()
+	repo := repository.New(dbPool)
+	service := account.NewService(repo)
+	handler := account.NewHandler(service, cfg)
+
+	r := routes.NewRouter(routes.RouterConfig{
+		UserHandler: handler,
+	}, dbPool, cfg)
+
+	fmt.Printf("🚀 Server starting on port %s\n", cfg.Port)
+	
 	r.Run(":" + cfg.Port)
 }
