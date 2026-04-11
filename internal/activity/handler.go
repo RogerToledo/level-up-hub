@@ -53,8 +53,19 @@ func (h *ActivityHandler) Create(c *gin.Context) {
 }
 
 func (h *ActivityHandler) AddEvidence(c *gin.Context) {
-	activityID, _ := uuid.Parse(c.Param("id"))
-	userID, _ := c.Get("user_id")
+	activityID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		return
+	}
+
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+		return
+	}
+
+	userID := userIDValue.(uuid.UUID)
 
 	var input struct {
 		URL         string `json:"url" binding:"required,url"`
@@ -66,7 +77,7 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 		return
 	}
 
-	evidence, err := h.queries.AddEvidence(c.Request.Context(), activityID, userID.(uuid.UUID), input.URL, input.Description)
+	evidence, err := h.queries.AddEvidence(c.Request.Context(), activityID, userID, input.URL, input.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao salvar evidência"})
 		return
@@ -76,8 +87,19 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 }
 
 func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
-	id, _ := uuid.Parse(c.Param("id"))
-	userID, _ := c.Get("user_id")
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		return
+	}
+
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+		return
+	}
+
+	userID := userIDValue.(uuid.UUID)
 
 	var input struct {
 		Progress int32 `json:"progress" binding:"required"`
@@ -88,7 +110,7 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 		return
 	}
 
-	if err := h.queries.UpdateProgress(c.Request.Context(), id, userID.(uuid.UUID), input.Progress); err != nil {
+	if err := h.queries.UpdateProgress(c.Request.Context(), id, userID, input.Progress); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao atualizar"})
 		return
 	}
@@ -97,10 +119,21 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 }
 
 func (h *ActivityHandler) Delete(c *gin.Context) {
-	id, _ := uuid.Parse(c.Param("id"))
-	userID, _ := c.Get("user_id")
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		return
+	}
 
-	if err := h.queries.Delete(c.Request.Context(), id, userID.(uuid.UUID)); err != nil {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+		return
+	}
+
+	userID := userIDValue.(uuid.UUID)
+
+	if err := h.queries.Delete(c.Request.Context(), id, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao deletar"})
 		return
 	}
