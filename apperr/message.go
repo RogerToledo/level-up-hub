@@ -3,6 +3,10 @@ package apperr
 const (
 	UserEN = "user"
 	UserPT = "usuário"
+	LadderEN = "ladder level"
+	LadderPT = "nível da ladder"
+	ActivityEN = "activity"
+	ActivityPT = "atividade"
 
 	OkCreate  = "O %s foi cadastrado com sucesso!"
 	OkCreateF = "A %s foi cadastrada com sucesso!"

@@ -6,9 +6,11 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/me/level-up-hub/internal/account"
 	"github.com/me/level-up-hub/config"
+	"github.com/me/level-up-hub/internal/account"
+	"github.com/me/level-up-hub/internal/activity"
 	"github.com/me/level-up-hub/internal/database"
+	"github.com/me/level-up-hub/internal/ladder"
 	"github.com/me/level-up-hub/internal/repository"
 	"github.com/me/level-up-hub/routes"
 )
@@ -33,12 +35,18 @@ func main() {
 	repo := repository.New(dbPool)
 	service := account.NewService(repo)
 	handler := account.NewHandler(service, cfg)
+	ladderService := ladder.NewService(repo)
+	ladderHandler := ladder.NewHandler(ladderService, cfg)
+	activityService := activity.NewService(repo, dbPool)
+	activityHandler := activity.NewHandler(activityService, cfg)
 
 	r := routes.NewRouter(routes.RouterConfig{
-		UserHandler: handler,
+		UserHandler:     handler,
+		LadderHandler:   ladderHandler,
+		ActivityHandler: activityHandler,
 	}, dbPool, cfg)
 
 	fmt.Printf("🚀 Server starting on port %s\n", cfg.Port)
-	
+
 	r.Run(":" + cfg.Port)
 }

@@ -91,7 +91,7 @@ type FindUserByEmailRow struct {
 	Email    string    `json:"email"`
 	Password string    `json:"password"`
 	Active   bool      `json:"active"`
-	Role     string    `json:"role"`
+	Role     UserRole  `json:"role"`
 }
 
 func (q *Queries) FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error) {

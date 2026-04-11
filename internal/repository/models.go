@@ -5,17 +5,205 @@
 package repository
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type LadderLevel string
+
+const (
+	LadderLevelP1  LadderLevel = "P1"
+	LadderLevelP2  LadderLevel = "P2"
+	LadderLevelP3  LadderLevel = "P3"
+	LadderLevelLT1 LadderLevel = "LT1"
+	LadderLevelLT2 LadderLevel = "LT2"
+	LadderLevelLT3 LadderLevel = "LT3"
+	LadderLevelLT4 LadderLevel = "LT4"
+)
+
+func (e *LadderLevel) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LadderLevel(s)
+	case string:
+		*e = LadderLevel(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LadderLevel: %T", src)
+	}
+	return nil
+}
+
+type NullLadderLevel struct {
+	LadderLevel LadderLevel `json:"ladder_level"`
+	Valid       bool        `json:"valid"` // Valid is true if LadderLevel is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLadderLevel) Scan(value interface{}) error {
+	if value == nil {
+		ns.LadderLevel, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LadderLevel.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLadderLevel) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LadderLevel), nil
+}
+
+type Pillar string
+
+const (
+	PillarTECHNICAL Pillar = "TECHNICAL"
+	PillarRESULTS   Pillar = "RESULTS"
+	PillarINFLUENCE Pillar = "INFLUENCE"
+)
+
+func (e *Pillar) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Pillar(s)
+	case string:
+		*e = Pillar(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Pillar: %T", src)
+	}
+	return nil
+}
+
+type NullPillar struct {
+	Pillar Pillar `json:"pillar"`
+	Valid  bool   `json:"valid"` // Valid is true if Pillar is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPillar) Scan(value interface{}) error {
+	if value == nil {
+		ns.Pillar, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Pillar.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPillar) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Pillar), nil
+}
+
+type UserRole string
+
+const (
+	UserRoleUser  UserRole = "user"
+	UserRoleAdmin UserRole = "admin"
+)
+
+func (e *UserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UserRole(s)
+	case string:
+		*e = UserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UserRole: %T", src)
+	}
+	return nil
+}
+
+type NullUserRole struct {
+	UserRole UserRole `json:"user_role"`
+	Valid    bool     `json:"valid"` // Valid is true if UserRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUserRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.UserRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UserRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUserRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UserRole), nil
+}
+
+type Activity struct {
+	ID                 uuid.UUID   `json:"id"`
+	UserID             uuid.UUID   `json:"user_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
+	Title              string      `json:"title"`
+	Description        pgtype.Text `json:"description"`
+	IsPdiTarget        bool        `json:"is_pdi_target"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
+	CompletedAt        pgtype.Date `json:"completed_at"`
+	CreatedAt          pgtype.Date `json:"created_at"`
+	UpdatedAt          pgtype.Date `json:"updated_at"`
+}
+
+type ActivityEvidence struct {
+	ID          uuid.UUID   `json:"id"`
+	ActivityID  uuid.UUID   `json:"activity_id"`
+	EvidenceUrl string      `json:"evidence_url"`
+	Description pgtype.Text `json:"description"`
+	CreatedAt   pgtype.Date `json:"created_at"`
+}
+
+type ActivityPillar struct {
+	ActivityID uuid.UUID   `json:"activity_id"`
+	Pillar     interface{} `json:"pillar"`
+}
+
+type CareerLadder struct {
+	ID              uuid.UUID   `json:"id"`
+	Level           LadderLevel `json:"level"`
+	XpReward        int32       `json:"xp_reward"`
+	Technical       string      `json:"technical"`
+	ExpectedResults string      `json:"expected_results"`
+	LeadershipScope string      `json:"leadership_scope"`
+}
+
+type EvaluationCycle struct {
+	ID        uuid.UUID   `json:"id"`
+	Name      string      `json:"name"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+	IsActive  pgtype.Bool `json:"is_active"`
+}
+
 type User struct {
-	ID        uuid.UUID        `json:"id"`
-	Username  string           `json:"username"`
-	Email     string           `json:"email"`
-	Password  string           `json:"password"`
-	Active    bool             `json:"active"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	Role      string           `json:"role"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	Active       bool        `json:"active"`
+	Role         UserRole    `json:"role"`
+	CreatedAt    pgtype.Date `json:"created_at"`
+	UpdatedAt    pgtype.Date `json:"updated_at"`
+	CurrentLevel int32       `json:"current_level"`
+	TotalXp      int32       `json:"total_xp"`
+}
+
+type XpTarget struct {
+	ID       uuid.UUID `json:"id"`
+	Target   int32     `json:"target"`
+	Year     int32     `json:"year"`
+	LadderID uuid.UUID `json:"ladder_id"`
 }

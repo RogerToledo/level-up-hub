@@ -128,7 +128,7 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, secret string) (L
 		return LoginResponse{}, apperr.MessageError(apperr.ErrInvalidCredentials, err)
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Role, secret)
+	token, err := auth.GenerateToken(user.ID, string(user.Role), secret)
 	if err != nil {
 		return LoginResponse{}, apperr.MessageError(apperr.ErrGenerateToken, err)
 	}

@@ -8,14 +8,40 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	AddEvidence(ctx context.Context, arg AddEvidenceParams) (ActivityEvidence, error)
+	CreateActivity(ctx context.Context, arg CreateActivityParams) (Activity, error)
+	CreateActivityPillar(ctx context.Context, arg CreateActivityPillarParams) (ActivityPillar, error)
+	CreateLadderLevel(ctx context.Context, arg CreateLadderLevelParams) (CareerLadder, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
+	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	FindActivityByID(ctx context.Context, id uuid.UUID) (FindActivityByIDRow, error)
+	FindActivityComposition(ctx context.Context, userID uuid.UUID) ([]FindActivityCompositionRow, error)
+	FindActivityDetail(ctx context.Context, id uuid.UUID) (FindActivityDetailRow, error)
+	FindActivityWithLadder(ctx context.Context, id uuid.UUID) (FindActivityWithLadderRow, error)
 	FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error)
+	FindCurrentCycle(ctx context.Context) (EvaluationCycle, error)
+	FindCurrentTargetLevel(ctx context.Context, year int32) (FindCurrentTargetLevelRow, error)
+	FindDetailedActivityReport(ctx context.Context, userID uuid.UUID) ([]FindDetailedActivityReportRow, error)
+	FindEvidencesByActivity(ctx context.Context, activityID uuid.UUID) ([]ActivityEvidence, error)
+	FindGapAnalysis(ctx context.Context, arg FindGapAnalysisParams) ([]FindGapAnalysisRow, error)
+	FindLadderByLevel(ctx context.Context, level LadderLevel) (CareerLadder, error)
+	FindLadderLevel(ctx context.Context, id uuid.UUID) (CareerLadder, error)
+	FindPdiDashboard(ctx context.Context, userID uuid.UUID) ([]FindPdiDashboardRow, error)
+	FindPerformanceByPeriod(ctx context.Context, arg FindPerformanceByPeriodParams) ([]FindPerformanceByPeriodRow, error)
+	FindPreviousCycle(ctx context.Context, endDate pgtype.Date) (EvaluationCycle, error)
+	FindUserActivities(ctx context.Context, userID uuid.UUID) ([]FindUserActivitiesRow, error)
 	FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error)
 	FindUserByID(ctx context.Context, id uuid.UUID) (FindUserByIDRow, error)
+	ListEntireLadder(ctx context.Context) ([]CareerLadder, error)
+	ListUserActivities(ctx context.Context, userID uuid.UUID) ([]ListUserActivitiesRow, error)
+	ListUserActivitiesWithEvidences(ctx context.Context, userID uuid.UUID) ([]ListUserActivitiesWithEvidencesRow, error)
+	UpdateActivityProgress(ctx context.Context, arg UpdateActivityProgressParams) (Activity, error)
+	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 }
 
