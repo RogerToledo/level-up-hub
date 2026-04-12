@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/config"
 	"github.com/me/level-up-hub/internal/pkg/identity"
@@ -54,15 +53,15 @@ func (h *ActivityHandler) Create(c *gin.Context) {
 }
 
 func (h *ActivityHandler) AddEvidence(c *gin.Context) {
-	activityID, err := uuid.Parse(c.Param("id"))
+	activityID, err := identity.ValidateIDParam(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
 		userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
@@ -72,29 +71,29 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "URL válida é obrigatória"})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
 	evidence, err := h.queries.AddEvidence(c.Request.Context(), activityID, userID, input.URL, input.Description)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao salvar evidência"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, evidence)
+	rest.Send(c.Writer, evidence, http.StatusCreated)
 }
 
 func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := identity.ValidateIDParam(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
@@ -103,12 +102,12 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
 	if err := h.queries.UpdateProgress(c.Request.Context(), id, userID, input.Progress); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao atualizar"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
@@ -116,20 +115,20 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 }
 
 func (h *ActivityHandler) Delete(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := identity.ValidateIDParam(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id"})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	if err := h.queries.Delete(c.Request.Context(), id, userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao deletar"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
@@ -139,104 +138,104 @@ func (h *ActivityHandler) Delete(c *gin.Context) {
 func (h *ActivityHandler) GetDashboard(c *gin.Context) {
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	dashboard, err := h.queries.GetCareerDashboard(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate dashboard"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, dashboard)
+	rest.Send(c.Writer, dashboard, http.StatusOK)
 }
 
 func (h *ActivityHandler) GetActivitiesEvidences(c *gin.Context) {
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	activities, err := h.queries.GetActivitiesEvidence(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch activities with evidences"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, activities)
+	rest.Send(c.Writer, activities, http.StatusOK)
 }
 
 func (h *ActivityHandler) GetDetailedReport(c *gin.Context) {
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	report, err := h.queries.GetDetailedReport(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch detailed report"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, report)
+	rest.Send(c.Writer, report, http.StatusOK)
 }
 
 func (h *ActivityHandler) GetGapAnalysis(c *gin.Context) {
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	year := c.Query("year")
 	yearInt, err := strconv.Atoi(year)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid year parameter"})
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrInvalidDate, err)
 		return
 	}
 
 	gapAnalysis, err := h.queries.GetGapAnalysis(c.Request.Context(), userID, yearInt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch gap analysis"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gapAnalysis)
+	rest.Send(c.Writer, gapAnalysis, http.StatusOK)
 }
 
 func (h *ActivityHandler) GetReadinessCheck(c *gin.Context) {
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
 	}
 
 	check, err := h.queries.GetCareerRadar(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to perform readiness check"})
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, check)
+	rest.Send(c.Writer, check, http.StatusOK)
 }	
 
 func (h *ActivityHandler) GetCycleComparison(c *gin.Context) {
     userID, err := identity.GetUserIDFromContext(c)
     if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+        rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
         return
     }
 
     report, err := h.queries.GetCycleComparison(c.Request.Context(), userID)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
         return
     }
 
-    c.JSON(http.StatusOK, report)
+    rest.Send(c.Writer, report, http.StatusOK)
 }
 
 func getErrorMessage(fe validator.FieldError) string {

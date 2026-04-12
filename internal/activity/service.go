@@ -2,12 +2,14 @@ package activity
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"log/slog"
 	"math"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/internal/repository"
 )
 
@@ -23,6 +25,10 @@ func NewService(repo *repository.Queries, pool *pgxpool.Pool) *Service {
 func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivityDTO) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
+		slog.Error("failed to begin transaction",
+			slog.String("error", err.Error()),
+			slog.String("user_id", input.UserID.String()),
+		)
 		return err
 	}
 	defer tx.Rollback(ctx)
@@ -31,7 +37,11 @@ func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivi
 
 	activity, err := repoWithTx.CreateActivity(ctx, input.ToRepositoryParams())
 	if err != nil {
-		return err
+		slog.Error("failed to create activity",
+			slog.String("error", err.Error()),
+			slog.String("user_id", input.UserID.String()),
+		)
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.ActivityPT), err)
 	}
 
 	for _, p := range input.Pillars {
@@ -40,12 +50,23 @@ func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivi
 			Pillar:     p,
 		})
 		if err != nil {
-			return err
+			slog.Error("failed to create activity pillar",
+				slog.String("error", err.Error()),
+				slog.String("user_id", input.UserID.String()),
+				slog.String("activity_id", activity.ID.String()),
+				slog.String("pillar", string(p)),
+			)
+			return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.PillarPT), err)
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return err
+		slog.Error("transaction commit failed",
+            slog.String("error", err.Error()),
+            slog.String("user_id", input.UserID.String()),
+            slog.String("activity_id", activity.ID.String()),
+        )
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.ActivityPT), err)
 	}
 
 	return nil
@@ -54,32 +75,46 @@ func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivi
 func (s *Service) CreateActivity(ctx context.Context, params repository.CreateActivityParams) error {
 	_, err := s.repo.CreateActivity(ctx, params)
 	if err != nil {
-		return err
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.ActivityPT), err)
 	}
 
 	return nil
 }
 
 func (s *Service) AddEvidence(ctx context.Context, activityID uuid.UUID, userID uuid.UUID, url string, description string) (repository.ActivityEvidence, error) {
-	// Valida ownership da atividade (query agora valida user_id)
 	_, err := s.repo.FindActivityByID(ctx, repository.FindActivityByIDParams{
 		ID:     activityID,
 		UserID: userID,
 	})
 	if err != nil {
-		return repository.ActivityEvidence{}, errors.New("atividade não encontrada ou não pertence ao usuário")
+		slog.Warn("unauthorized activity access attempt",
+            slog.String("activity_id", activityID.String()),
+            slog.String("user_id", userID.String()),
+            slog.String("error", err.Error()),
+        )
+		return repository.ActivityEvidence{}, apperr.MessageError(apperr.ErrActivityNotFound, err)
 	}
 
-	return s.repo.AddEvidence(ctx, repository.AddEvidenceParams{
+	evidence, err := s.repo.AddEvidence(ctx, repository.AddEvidenceParams{
 		ActivityID:  activityID,
 		EvidenceUrl: url,
 		Description: pgtype.Text{String: description, Valid: description != ""},
 	})
+	if err != nil {
+		slog.Error("failed to add evidence",
+			slog.String("error", err.Error()),
+			slog.String("activity_id", activityID.String()),
+			slog.String("user_id", userID.String()),
+		)
+		return repository.ActivityEvidence{}, apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.EvidencePT), err)
+	}
+
+	return evidence, nil
 }
 
 func (s *Service) UpdateProgress(ctx context.Context, activityID uuid.UUID, userID uuid.UUID, progress int32) error {
 	if progress < 0 || progress > 100 {
-		return errors.New("progresso deve estar entre 0 e 100")
+		return apperr.MessageError(apperr.ErrInvalidProgress, nil)
 	}
 
 	_, err := s.repo.UpdateActivityProgress(ctx, repository.UpdateActivityProgressParams{
@@ -88,14 +123,18 @@ func (s *Service) UpdateProgress(ctx context.Context, activityID uuid.UUID, user
 		UserID:             userID,
 	})
 
-	return err
+	return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.ActivityPT), err)
 }
 
 func (s *Service) Delete(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) error {
-	return s.repo.DeleteActivity(ctx, repository.DeleteActivityParams{
+	err := s.repo.DeleteActivity(ctx, repository.DeleteActivityParams{
 		ID:     activityID,
 		UserID: userID,
 	})
+	if err != nil {
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrDelete, apperr.ActivityPT), err)
+	}
+	return nil
 }
 
 func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*DashboardResponse, error) {

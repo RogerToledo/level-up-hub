@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,10 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			slog.Warn("unauthorized request - missing token",
+				slog.String("path", c.Request.URL.Path),
+				slog.String("ip", c.ClientIP()),
+			)
 			rest.Error(c.Writer, 401, apperr.ErrRequiredToken, nil)
 			c.Abort()
 
@@ -21,6 +26,10 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
+			slog.Warn("unauthorized request - invalid token format",
+				slog.String("path", c.Request.URL.Path),
+				slog.String("ip", c.ClientIP()),
+			)
 			rest.Error(c.Writer, 401, apperr.ErrInvalidToken, nil)
 			c.Abort()
 
@@ -31,9 +40,13 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 
 		claims, err := auth.ValidateToken(tokenString, secret)
 		if err != nil {
+			slog.Warn("unauthorized request - invalid token",
+				slog.String("path", c.Request.URL.Path),
+				slog.String("ip", c.ClientIP()),
+			)
 			rest.Error(c.Writer, 401, apperr.ErrInvalidToken, nil)
 			c.Abort()
-			
+
 			return
 		}
 

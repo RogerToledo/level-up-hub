@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/config"
+	"github.com/me/level-up-hub/internal/pkg/identity"
 	"github.com/me/level-up-hub/internal/rest"
 )
 
@@ -64,13 +65,13 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	id := c.Param("id")
-	if id == "" {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, nil)
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
-	err := h.service.UpdateUser(c.Request.Context(), id, req)
+	err = h.service.UpdateUser(c.Request.Context(), id, req)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		rest.Error(c.Writer, http.StatusNotFound, fmt.Sprintf(apperr.ErrIsNotFound, apperr.UserPT), nil)
 		return
@@ -84,13 +85,13 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 func (h *Handler) Delete(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, nil)
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
-	err := h.service.DeleteUser(c.Request.Context(), id)
+	err = h.service.DeleteUser(c.Request.Context(), id)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		rest.Error(c.Writer, http.StatusNotFound, fmt.Sprintf(apperr.ErrIsNotFound, apperr.UserPT), nil)
 		return
@@ -104,9 +105,9 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 func (h *Handler) FindByID(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, nil)
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 

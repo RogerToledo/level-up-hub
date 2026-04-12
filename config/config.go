@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/caarlos0/env/v10"
@@ -27,12 +27,13 @@ func LoadConfig() *Config {
 	onde.Do(func() {
 		err := godotenv.Load()
 		if err != nil {
-			log.Printf("Error loading .env file: %v", err)
+			slog.Warn("no .env file found, using environment variables")
 		}
 
 		cfg = &Config{}
 		if err := env.Parse(cfg); err != nil {
-			log.Fatalf("Config error: %v", err)
+			slog.Error("failed to parse config", slog.String("error", err.Error()))
+			panic(err)
 		}
 
 	})

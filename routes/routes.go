@@ -5,11 +5,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/config"
 	"github.com/me/level-up-hub/internal/account"
 	"github.com/me/level-up-hub/internal/activity"
 	"github.com/me/level-up-hub/internal/api"
 	"github.com/me/level-up-hub/internal/ladder"
+	"github.com/me/level-up-hub/internal/rest"
 )
 
 type RouterConfig struct {
@@ -29,10 +31,10 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	r.GET("/health", func(c *gin.Context) {
 		err := dbPool.Ping(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "down", "database": "unreachable"})
+				rest.Error(c.Writer, http.StatusServiceUnavailable, apperr.ErrInternalServerError, err)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "up", "database": "ok"})
+		rest.Send(c.Writer, apperr.Ok, http.StatusOK)
 	})
 
 	// API v1 routes

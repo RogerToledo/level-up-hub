@@ -28,3 +28,17 @@ func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 
 	return userID, nil
 }
+
+func ValidateIDParam(c *gin.Context) (uuid.UUID, error) {
+	idString := c.Param("id")
+	if idString == "" {
+		return uuid.UUID{}, errors.New("id is required")
+	}
+
+	id, err := ParseID(idString)
+	if err != nil {
+		return uuid.UUID{}, errors.New("invalid id format")
+	}
+
+	return id, nil	
+}

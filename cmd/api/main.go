@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/config"
@@ -11,6 +10,7 @@ import (
 	"github.com/me/level-up-hub/internal/activity"
 	"github.com/me/level-up-hub/internal/database"
 	"github.com/me/level-up-hub/internal/ladder"
+	"github.com/me/level-up-hub/internal/logger"
 	"github.com/me/level-up-hub/internal/repository"
 	"github.com/me/level-up-hub/routes"
 )
@@ -18,19 +18,30 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
+	// Configura logger estruturado
+	log := logger.Setup(cfg.Env)
+
 	if cfg.Env == "prod" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	fmt.Printf("Connected to %s mode\n", cfg.Env)
+	log.Info("application starting",
+		slog.String("env", cfg.Env),
+		slog.String("port", cfg.Port),
+	)
 
 	dbPool, err := database.NewPostgresPool(context.Background(), cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Error("failed to connect to database", slog.String("error", err.Error()))
+		panic(err)
 	}
 	defer dbPool.Close()
 
-	fmt.Printf("Connected to %s pool\n", cfg.Env)
+	log.Info("database connected",
+		slog.String("env", cfg.Env),
+		slog.Int("max_conns", cfg.MaxConns),
+		slog.Int("min_conns", cfg.MinConns),
+	)
 
 	repo := repository.New(dbPool)
 	service := account.NewService(repo)
@@ -46,7 +57,10 @@ func main() {
 		ActivityHandler: activityHandler,
 	}, dbPool, cfg)
 
-	fmt.Printf("🚀 Server starting on port %s\n", cfg.Port)
+	log.Info("server starting", slog.String("port", cfg.Port))
 
-	r.Run(":" + cfg.Port)
+	if err := r.Run(":" + cfg.Port); err != nil {
+		log.Error("server failed to start", slog.String("error", err.Error()))
+		panic(err)
+	}
 }

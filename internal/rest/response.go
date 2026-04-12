@@ -2,7 +2,7 @@ package rest
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -30,7 +30,7 @@ func Send(w http.ResponseWriter, message any, statusCode int) {
 
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		log.Println(err)
+		slog.Error("failed to encode response", slog.String("error", err.Error()))
 	}
 }
 
@@ -48,6 +48,6 @@ func Error(w http.ResponseWriter, statusCode int, errMessage string, details any
 
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		log.Println(err)
+		slog.Error("failed to encode error response", slog.String("error", err.Error()))
 	}
 }
