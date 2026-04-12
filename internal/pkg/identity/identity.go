@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// ParseID validates and parses a string into a UUID.
 func ParseID(id string) (uuid.UUID, error) {
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
@@ -15,6 +16,7 @@ func ParseID(id string) (uuid.UUID, error) {
 	return parsedID, nil
 }
 
+// GetUserIDFromContext extracts the user ID from the Gin context.
 func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 	userIDValue, exists := c.Get("user_id")
 	if !exists {
@@ -29,6 +31,7 @@ func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 	return userID, nil
 }
 
+// ValidateIDParam validates and extracts an ID from URL parameters.
 func ValidateIDParam(c *gin.Context) (uuid.UUID, error) {
 	idString := c.Param("id")
 	if idString == "" {
@@ -40,5 +43,5 @@ func ValidateIDParam(c *gin.Context) (uuid.UUID, error) {
 		return uuid.UUID{}, errors.New("invalid id format")
 	}
 
-	return id, nil	
+	return id, nil
 }

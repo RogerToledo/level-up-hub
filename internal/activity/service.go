@@ -31,7 +31,7 @@ func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivi
 		)
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	repoWithTx := s.repo.WithTx(tx)
 

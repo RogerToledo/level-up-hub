@@ -1,3 +1,4 @@
+// Package config provides application configuration loading and management.
 package config
 
 import (
@@ -8,9 +9,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config holds all application configuration settings loaded from environment variables.
 type Config struct {
-	DbUrlDev  string `env:"DB_URL_DEV" envDefault:"postgres://localhost:5432/dev_db"`
-	DbUrlProd string `env:"DB_URL_PROD" envDefault:"postgres://localhost:5432/prod_db"`
+	DbURLDev  string `env:"DB_URL_DEV" envDefault:"postgres://localhost:5432/dev_db"`
+	DbURLProd string `env:"DB_URL_PROD" envDefault:"postgres://localhost:5432/prod_db"`
 	Port      string `env:"PORT" envDefault:"8081"`
 	Env       string `env:"ENV" envDefault:"dev"`
 
@@ -30,6 +32,8 @@ var (
 	onde sync.Once
 )
 
+// LoadConfig loads and returns the application configuration.
+// It uses sync.Once to ensure configuration is loaded only once.
 func LoadConfig() *Config {
 	onde.Do(func() {
 		err := godotenv.Load()

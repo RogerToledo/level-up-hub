@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: leveluphub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          go mod download
+          go install github.com/swaggo/swag/cmd/swag@latest
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Run database migrations
+        env:
+          DB_URL_DEV: postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable
+        run: |
+          for migration in db/migrations/*.sql; do
+            psql $DB_URL_DEV -f $migration
+          done
+
+      - name: Generate SQLC code
+        run: sqlc generate
+
+      - name: Run tests
+        env:
+          DB_URL_DEV: postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable
+          ENV: test
+          JWT_SECRET: test-secret-key
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build -v -o api cmd/api/main.go
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-binary
+          path: api
+          retention-days: 5
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...

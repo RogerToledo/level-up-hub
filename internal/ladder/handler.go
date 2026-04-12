@@ -11,15 +11,18 @@ import (
 	"github.com/me/level-up-hub/internal/rest"
 )
 
+// LadderHandler handles HTTP requests for career ladder operations.
 type LadderHandler struct {
 	queries *Service
 	cfg     *config.Config
 }
 
+// NewHandler creates a new ladder handler.
 func NewHandler(s *Service, cfg *config.Config) *LadderHandler {
 	return &LadderHandler{queries: s, cfg: cfg}
 }
 
+// Create handles the creation of a new ladder level.
 func (h *LadderHandler) Create(c *gin.Context) {
 	var input repository.CreateLadderLevelParams
 

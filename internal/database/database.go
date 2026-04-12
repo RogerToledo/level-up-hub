@@ -9,12 +9,13 @@ import (
 	"github.com/me/level-up-hub/config"
 )
 
+// NewPostgresPool creates and configures a new PostgreSQL connection pool.
 func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
-	var dbUrl string
+	var dbURL string
 	if cfg.Env == "prod" {
-		dbUrl = cfg.DbUrlProd
+		dbURL = cfg.DbURLProd
 	} else {
-		dbUrl = cfg.DbUrlDev
+		dbURL = cfg.DbURLDev
 	}
 
 	slog.Info("configuring database connection pool",
@@ -25,7 +26,7 @@ func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 		slog.Int("max_conn_idle_time_sec", cfg.MaxConnIdleTime),
 	)
 
-	poolConfig, err := pgxpool.ParseConfig(dbUrl)
+	poolConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		slog.Error("failed to parse database URL", slog.String("error", err.Error()))
 		return nil, err

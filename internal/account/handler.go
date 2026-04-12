@@ -14,11 +14,13 @@ import (
 	"github.com/me/level-up-hub/internal/rest"
 )
 
+// Handler handles HTTP requests for account operations.
 type Handler struct {
 	service *Service
 	config  *config.Config
 }
 
+// NewHandler creates a new account handler.
 func NewHandler(s *Service, cfg *config.Config) *Handler {
 	return &Handler{service: s, config: cfg}
 }
@@ -81,6 +83,16 @@ func (h *Handler) Register(c *gin.Context) {
 	rest.Send(c.Writer, fmt.Sprintf(apperr.OkCreate, apperr.UserPT), http.StatusCreated)
 }
 
+// Update godoc
+// @Summary      Update user
+// @Description  Update user account information
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      CreateUserRequest  true  "User data"
+// @Success      200   {object}  map[string]interface{}  "User updated successfully"
+// @Failure      400   {object}  map[string]interface{}  "Invalid data"
+// @Router       /users [put]
 func (h *Handler) Update(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

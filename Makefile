@@ -3,7 +3,7 @@ APP_NAME=level-up-hub-api
 DOCKER_COMPOSE=docker-compose.yml
 BINARY_NAME=api
 
-.PHONY: help build run test migrate-up docker-up clean swagger dev install-tools fmt lint check sqlc
+.PHONY: help build run test migrate-up docker-up clean swagger dev install-tools fmt lint check sqlc stop test-shutdown
 
 # Default command when typing just 'make'
 help:
@@ -15,11 +15,13 @@ help:
 	@echo "  make build         - Compila o binário da aplicação"
 	@echo "  make run           - Executa a aplicação localmente"
 	@echo "  make dev           - Roda em modo desenvolvimento (hot-reload)"
+	@echo "  make stop          - Para a aplicação gracefully (SIGTERM)"
 	@echo ""
 	@echo "🧪 Testes:"
 	@echo "  make test          - Executa todos os testes unitários"
 	@echo "  make cover         - Gera relatório de cobertura HTML"
 	@echo "  make test-verbose  - Testes com output detalhado"
+	@echo "  make test-shutdown - Testa graceful shutdown"
 	@echo ""
 	@echo "📚 Documentação:"
 	@echo "  make swagger       - Gera documentação Swagger/OpenAPI"
@@ -94,7 +96,7 @@ fmt:
 lint:
 	@echo "🔍 Executando linter..."
 	@if command -v golangci-lint > /dev/null; then \
-		golangci-lint run ./...; \
+		golangci-lint run ./... && echo "✅ Nenhum problema encontrado!"; \
 	else \
 		echo "⚠️  golangci-lint não instalado. Execute:"; \
 		echo "    brew install golangci-lint"; \
@@ -133,3 +135,27 @@ clean:
 	rm -f $(BINARY_NAME)
 	@echo "✅ Limpeza concluída"
 	rm -rf docs/docs.go docs/swagger.json docs/swagger.yaml
+
+stop:
+	@echo "🛑 Enviando sinal de graceful shutdown..."
+	@pkill -TERM $(BINARY_NAME) || echo "⚠️  Nenhum processo encontrado"
+	@sleep 2
+	@echo "✅ Shutdown completo"
+
+test-shutdown:
+	@echo "🧪 Testando graceful shutdown..."
+	@echo "1️⃣  Iniciando servidor..."
+	@(./$(BINARY_NAME) > /tmp/api.log 2>&1 &)
+	@sleep 2
+	@echo "2️⃣  Verificando health check..."
+	@curl -s http://localhost:8081/health > /dev/null && echo "✅ Servidor respondendo" || echo "❌ Servidor não responde"
+	@sleep 1
+	@echo "3️⃣  Enviando SIGTERM para graceful shutdown..."
+	@pkill -TERM $(BINARY_NAME)
+	@sleep 2
+	@echo "4️⃣  Verificando logs de shutdown..."
+	@grep -q "application stopped gracefully" /tmp/api.log && echo "✅ Graceful shutdown OK" || echo "❌ Shutdown incompleto"
+	@echo ""
+	@echo "📝 Últimas linhas do log:"
+	@tail -n 5 /tmp/api.log
+	@rm -f /tmp/api.log

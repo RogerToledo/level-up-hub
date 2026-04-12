@@ -54,6 +54,8 @@ open http://localhost:8081/swagger/index.html
 - [Connection Pool](docs/CONNECTION_POOL.md) - Configuração e otimização
 - [Database Indexes](docs/DATABASE_INDEXES.md) - Performance do banco
 - [Pagination](docs/PAGINATION.md) - Paginação de APIs
+- [Graceful Shutdown](docs/GRACEFUL_SHUTDOWN.md) - Encerramento limpo do servidor
+- [Testing](docs/TESTING.md) - Guia de testes automatizados
 
 ## 🛠️ Comandos Make
 
@@ -106,6 +108,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - ✅ Health check com métricas
 - ✅ Documentação Swagger
 - ✅ Connection pooling configurável
+- ✅ Graceful shutdown
+- ✅ Testes automatizados
+- ✅ CI/CD Pipeline (GitHub Actions)
 
 ## 🗂️ Estrutura do Projeto
 

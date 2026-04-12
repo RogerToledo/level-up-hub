@@ -1,3 +1,4 @@
+// Package auth provides JWT token generation and validation for user authentication.
 package auth
 
 import (
@@ -6,15 +7,16 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/me/level-up-hub/apperr"
 )
 
+// Claims represents the JWT token claims containing user ID and role information.
 type Claims struct {
 	UserID uuid.UUID `json:"user_id"`
 	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
+// GenerateToken creates a new JWT token for the given user ID and role.
 func GenerateToken(userID uuid.UUID, role string, secret string) (string, error) {
 	claims := Claims{
 		UserID: userID,
@@ -29,10 +31,11 @@ func GenerateToken(userID uuid.UUID, role string, secret string) (string, error)
 	return token.SignedString([]byte(secret))
 }
 
+// ValidateToken validates a JWT token string and returns the claims if valid.
 func ValidateToken(tokenString, secret string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf(apperr.ErrRequiredToken)
+			return nil, fmt.Errorf("token de autenticação é necessário")
 		}
 		return []byte(secret), nil
 	})
@@ -42,7 +45,6 @@ func ValidateToken(tokenString, secret string) (*Claims, error) {
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
-	} else {
-		return nil, fmt.Errorf(apperr.ErrInvalidToken)
 	}
+	return nil, fmt.Errorf("token de autenticação inválido")
 }

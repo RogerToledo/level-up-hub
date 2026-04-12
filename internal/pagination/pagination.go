@@ -29,6 +29,7 @@ type PaginationMetadata struct {
 	HasPrevious  bool  `json:"has_previous"`
 }
 
+// Pagination defaults and limits.
 const (
 	DefaultPage     = 1
 	DefaultPageSize = 20

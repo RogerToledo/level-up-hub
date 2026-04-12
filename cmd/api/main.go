@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/config"
@@ -77,10 +82,53 @@ func main() {
 		ActivityHandler: activityHandler,
 	}, dbPool, cfg)
 
-	log.Info("server starting", slog.String("port", cfg.Port))
-
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Error("server failed to start", slog.String("error", err.Error()))
-		panic(err)
+	// Configure HTTP server
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
+		// Timeout configurations for security
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Info("server starting",
+			slog.String("port", cfg.Port),
+			slog.String("env", cfg.Env),
+		)
+
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("server failed to start", slog.String("error", err.Error()))
+			panic(err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	// SIGINT (Ctrl+C) and SIGTERM (kill) are captured
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("shutdown signal received, initiating graceful shutdown...")
+
+	// Graceful shutdown with 30 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Shutdown server
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("server forced to shutdown", slog.String("error", err.Error()))
+	} else {
+		log.Info("server shutdown completed successfully")
+	}
+
+	// Close database pool
+	log.Info("closing database connection pool...")
+	dbPool.Close()
+	log.Info("database connections closed")
+
+	log.Info("application stopped gracefully")
 }

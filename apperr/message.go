@@ -1,5 +1,9 @@
+// Package apperr provides application-level error messages and constants
+// for standardized error handling across the Level Up Hub API.
 package apperr
 
+// Message constants for internationalization (EN/PT) and standard API responses.
+// These constants provide consistent error and success messages across the application.
 const (
 	UserEN        = "user"
 	UserPT        = "usuário"

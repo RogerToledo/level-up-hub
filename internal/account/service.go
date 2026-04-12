@@ -73,7 +73,7 @@ func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, req CreateUserRe
 			slog.String("error", err.Error()),
 			slog.String("user_id", id.String()),
 		)
-		return apperr.MessageError(fmt.Sprintf(apperr.ErrorUpdate, apperr.UserPT), err)
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.UserPT), err)
 	}
 
 	return nil
