@@ -115,8 +115,13 @@ SELECT
 	a.ladder_id,
 	a.user_id 
 FROM activities a 
-WHERE a.id = $1
+WHERE a.id = $1 AND a.user_id = $2
 `
+
+type FindActivityByIDParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
 
 type FindActivityByIDRow struct {
 	ID                 uuid.UUID   `json:"id"`
@@ -129,8 +134,8 @@ type FindActivityByIDRow struct {
 	UserID             uuid.UUID   `json:"user_id"`
 }
 
-func (q *Queries) FindActivityByID(ctx context.Context, id uuid.UUID) (FindActivityByIDRow, error) {
-	row := q.db.QueryRow(ctx, findActivityByID, id)
+func (q *Queries) FindActivityByID(ctx context.Context, arg FindActivityByIDParams) (FindActivityByIDRow, error) {
+	row := q.db.QueryRow(ctx, findActivityByID, arg.ID, arg.UserID)
 	var i FindActivityByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -189,8 +194,13 @@ SELECT
     cl.level
 FROM activities a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1
+WHERE a.id = $1 AND a.user_id = $2
 `
+
+type FindActivityDetailParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
 
 type FindActivityDetailRow struct {
 	ID                 uuid.UUID   `json:"id"`
@@ -200,8 +210,8 @@ type FindActivityDetailRow struct {
 	Level              LadderLevel `json:"level"`
 }
 
-func (q *Queries) FindActivityDetail(ctx context.Context, id uuid.UUID) (FindActivityDetailRow, error) {
-	row := q.db.QueryRow(ctx, findActivityDetail, id)
+func (q *Queries) FindActivityDetail(ctx context.Context, arg FindActivityDetailParams) (FindActivityDetailRow, error) {
+	row := q.db.QueryRow(ctx, findActivityDetail, arg.ID, arg.UserID)
 	var i FindActivityDetailRow
 	err := row.Scan(
 		&i.ID,
@@ -231,8 +241,13 @@ SELECT
     cl.leadership_scope
 FROM activities a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1
+WHERE a.id = $1 AND a.user_id = $2
 `
+
+type FindActivityWithLadderParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
 
 type FindActivityWithLadderRow struct {
 	ID                 uuid.UUID   `json:"id"`
@@ -251,8 +266,8 @@ type FindActivityWithLadderRow struct {
 	LeadershipScope    string      `json:"leadership_scope"`
 }
 
-func (q *Queries) FindActivityWithLadder(ctx context.Context, id uuid.UUID) (FindActivityWithLadderRow, error) {
-	row := q.db.QueryRow(ctx, findActivityWithLadder, id)
+func (q *Queries) FindActivityWithLadder(ctx context.Context, arg FindActivityWithLadderParams) (FindActivityWithLadderRow, error) {
+	row := q.db.QueryRow(ctx, findActivityWithLadder, arg.ID, arg.UserID)
 	var i FindActivityWithLadderRow
 	err := row.Scan(
 		&i.ID,

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/config"
+	"github.com/me/level-up-hub/internal/pkg/identity"
 	"github.com/me/level-up-hub/internal/rest"
 )
 
@@ -59,13 +60,11 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+		userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID := userIDValue.(uuid.UUID)
 
 	var input struct {
 		URL         string `json:"url" binding:"required,url"`
@@ -93,13 +92,11 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID := userIDValue.(uuid.UUID)
 
 	var input struct {
 		Progress int32 `json:"progress" binding:"required"`
@@ -125,13 +122,11 @@ func (h *ActivityHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID := userIDValue.(uuid.UUID)
 
 	if err := h.queries.Delete(c.Request.Context(), id, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao deletar"})
@@ -142,13 +137,11 @@ func (h *ActivityHandler) Delete(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetDashboard(c *gin.Context) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID := userIDValue.(uuid.UUID)
 
 	dashboard, err := h.queries.GetCareerDashboard(c.Request.Context(), userID)
 	if err != nil {
@@ -160,13 +153,12 @@ func (h *ActivityHandler) GetDashboard(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetActivitiesEvidences(c *gin.Context) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID := userIDValue.(uuid.UUID)
 	activities, err := h.queries.GetActivitiesEvidence(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch activities with evidences"})
@@ -177,13 +169,12 @@ func (h *ActivityHandler) GetActivitiesEvidences(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetDetailedReport(c *gin.Context) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID := userIDValue.(uuid.UUID)
 	report, err := h.queries.GetDetailedReport(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch detailed report"})
@@ -194,13 +185,12 @@ func (h *ActivityHandler) GetDetailedReport(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetGapAnalysis(c *gin.Context) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID := userIDValue.(uuid.UUID)
 	year := c.Query("year")
 	yearInt, err := strconv.Atoi(year)
 	if err != nil {
@@ -218,13 +208,11 @@ func (h *ActivityHandler) GetGapAnalysis(c *gin.Context) {
 }
 
 func (h *ActivityHandler) GetReadinessCheck(c *gin.Context) {
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID := userIDValue.(uuid.UUID)
 
 	check, err := h.queries.GetCareerRadar(c.Request.Context(), userID)
 	if err != nil {
@@ -236,13 +224,11 @@ func (h *ActivityHandler) GetReadinessCheck(c *gin.Context) {
 }	
 
 func (h *ActivityHandler) GetCycleComparison(c *gin.Context) {
-    userIDValue, exists := c.Get("user_id")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in token"})
+    userID, err := identity.GetUserIDFromContext(c)
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
         return
     }
-
-    userID := userIDValue.(uuid.UUID)
 
     report, err := h.queries.GetCycleComparison(c.Request.Context(), userID)
     if err != nil {

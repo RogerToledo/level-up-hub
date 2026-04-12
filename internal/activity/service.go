@@ -61,12 +61,13 @@ func (s *Service) CreateActivity(ctx context.Context, params repository.CreateAc
 }
 
 func (s *Service) AddEvidence(ctx context.Context, activityID uuid.UUID, userID uuid.UUID, url string, description string) (repository.ActivityEvidence, error) {
-	activity, err := s.repo.FindActivityByID(ctx, activityID)
+	// Valida ownership da atividade (query agora valida user_id)
+	_, err := s.repo.FindActivityByID(ctx, repository.FindActivityByIDParams{
+		ID:     activityID,
+		UserID: userID,
+	})
 	if err != nil {
-		return repository.ActivityEvidence{}, err
-	}
-	if activity.UserID != userID {
-		return repository.ActivityEvidence{}, errors.New("atividade não pertence ao usuário")
+		return repository.ActivityEvidence{}, errors.New("atividade não encontrada ou não pertence ao usuário")
 	}
 
 	return s.repo.AddEvidence(ctx, repository.AddEvidenceParams{
@@ -215,7 +216,7 @@ func (s *Service) GetCareerRadar(ctx context.Context, userID uuid.UUID) (*Career
 }
 
 func (s *Service) GetCycleComparison(ctx context.Context, userID uuid.UUID) (*ComparisonReport, error) {
-	// 1. Descobre os ciclos no banco	
+	// 1. Descobre os ciclos no banco
 	current, _ := s.repo.FindCurrentCycle(ctx)
 	previous, _ := s.repo.FindPreviousCycle(ctx, current.StartDate)
 
@@ -244,7 +245,7 @@ func (s *Service) GetCycleComparison(ctx context.Context, userID uuid.UUID) (*Co
 	for _, c := range currentPerf {
 		totalCurrXP += c.TotalXp
 		prevXP := prevMap[string(c.Level)]
-		
+
 		report.LevelEvolution = append(report.LevelEvolution, LevelComparison{
 			LevelName: string(c.Level),
 			CurrentXP: c.TotalXp,

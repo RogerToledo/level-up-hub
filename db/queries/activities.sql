@@ -35,7 +35,7 @@ SELECT
     cl.level
 FROM activities a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1;
+WHERE a.id = $1 AND a.user_id = $2;
 
 -- name: FindActivityWithLadder :one
 SELECT 
@@ -55,7 +55,7 @@ SELECT
     cl.leadership_scope
 FROM activities a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1;
+WHERE a.id = $1 AND a.user_id = $2;
 
 -- name: ListUserActivities :many
 SELECT 
@@ -116,7 +116,7 @@ SELECT
 	a.ladder_id,
 	a.user_id 
 FROM activities a 
-WHERE a.id = $1;
+WHERE a.id = $1 AND a.user_id = $2;
 
 -- name: FindEvidencesByActivity :many
 SELECT * FROM activity_evidences 

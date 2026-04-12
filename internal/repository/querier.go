@@ -19,10 +19,10 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
-	FindActivityByID(ctx context.Context, id uuid.UUID) (FindActivityByIDRow, error)
+	FindActivityByID(ctx context.Context, arg FindActivityByIDParams) (FindActivityByIDRow, error)
 	FindActivityComposition(ctx context.Context, userID uuid.UUID) ([]FindActivityCompositionRow, error)
-	FindActivityDetail(ctx context.Context, id uuid.UUID) (FindActivityDetailRow, error)
-	FindActivityWithLadder(ctx context.Context, id uuid.UUID) (FindActivityWithLadderRow, error)
+	FindActivityDetail(ctx context.Context, arg FindActivityDetailParams) (FindActivityDetailRow, error)
+	FindActivityWithLadder(ctx context.Context, arg FindActivityWithLadderParams) (FindActivityWithLadderRow, error)
 	FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error)
 	FindCurrentCycle(ctx context.Context) (EvaluationCycle, error)
 	FindCurrentTargetLevel(ctx context.Context, year int32) (FindCurrentTargetLevelRow, error)
