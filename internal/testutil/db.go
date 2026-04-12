@@ -16,7 +16,7 @@ func SetupTestDB(t *testing.T) *pgxpool.Pool {
 
 	cfg := &config.Config{
 		Env:       "test",
-		DbUrlDev:  "postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable",
+		DbURLDev:  "postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable",
 		MaxConns:  5,
 		MinConns:  1,
 		MaxConnLifetime: 3600,

@@ -123,9 +123,10 @@ docker-down:
 docker-logs:
 	docker-compose -f $(DOCKER_COMPOSE) logs -f
 
-tidy:
+mod:
 	@echo "🧹 Organizando dependências..."
 	go mod tidy
+	go mod vendor
 	@echo "✅ Dependências organizadas"
 
 clean:

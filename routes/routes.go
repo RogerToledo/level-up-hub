@@ -81,6 +81,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/gap-analysis", cfg.ActivityHandler.GetGapAnalysis)
 	protected.GET("/career-radar", cfg.ActivityHandler.GetReadinessCheck)
 	protected.GET("/cycle-comparison", cfg.ActivityHandler.GetCycleComparison)
+	protected.GET("/report/pdf", cfg.ActivityHandler.DownloadReportPDF)
 
 	// Admin-only routes
 	admin := protected.Group("/")

@@ -59,7 +59,7 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 		return
 	}
 
-		userID, err := identity.GetUserIDFromContext(c)
+	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
 		return
@@ -220,22 +220,48 @@ func (h *ActivityHandler) GetReadinessCheck(c *gin.Context) {
 	}
 
 	rest.Send(c.Writer, check, http.StatusOK)
-}	
+}
 
 func (h *ActivityHandler) GetCycleComparison(c *gin.Context) {
-    userID, err := identity.GetUserIDFromContext(c)
-    if err != nil {
-        rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
-        return
-    }
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
 
-    report, err := h.queries.GetCycleComparison(c.Request.Context(), userID)
-    if err != nil {
-        rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
-        return
-    }
+	report, err := h.queries.GetCycleComparison(c.Request.Context(), userID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
 
-    rest.Send(c.Writer, report, http.StatusOK)
+	rest.Send(c.Writer, report, http.StatusOK)
+}
+
+func (h *ActivityHandler) DownloadReportPDF(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	activities, err := h.queries.GetDetailedReport(c.Request.Context(), userID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	pdfBuffer, err := GenerateDossierPDF(activities)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=meu_dossie_carreira.pdf")
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Length", fmt.Sprintf("%d", pdfBuffer.Len()))
+
+	c.Writer.Write(pdfBuffer.Bytes())
 }
 
 func getErrorMessage(fe validator.FieldError) string {
