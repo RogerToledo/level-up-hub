@@ -1,0 +1,197 @@
+basePath: /v1
+definitions:
+  account.CreateUserRequest:
+    properties:
+      active:
+        type: boolean
+      email:
+        type: string
+      password:
+        maxLength: 50
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  account.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+host: localhost:8081
+info:
+  contact:
+    email: support@leveluphub.com
+    name: API Support
+  description: API para gerenciamento de carreira e desenvolvimento profissional com
+    sistema de XP, atividades e relatórios.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Level Up Hub API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/account.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid credentials
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/account.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register new user
+      tags:
+      - auth
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated list of users (admin only)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User list
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns information for a specific user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Digite 'Bearer' seguido do token JWT
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

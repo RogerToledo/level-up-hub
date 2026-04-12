@@ -62,10 +62,10 @@ func (s *Service) CreateCompleteActivity(ctx context.Context, input CreateActivi
 
 	if err := tx.Commit(ctx); err != nil {
 		slog.Error("transaction commit failed",
-            slog.String("error", err.Error()),
-            slog.String("user_id", input.UserID.String()),
-            slog.String("activity_id", activity.ID.String()),
-        )
+			slog.String("error", err.Error()),
+			slog.String("user_id", input.UserID.String()),
+			slog.String("activity_id", activity.ID.String()),
+		)
 		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.ActivityPT), err)
 	}
 
@@ -88,10 +88,10 @@ func (s *Service) AddEvidence(ctx context.Context, activityID uuid.UUID, userID 
 	})
 	if err != nil {
 		slog.Warn("unauthorized activity access attempt",
-            slog.String("activity_id", activityID.String()),
-            slog.String("user_id", userID.String()),
-            slog.String("error", err.Error()),
-        )
+			slog.String("activity_id", activityID.String()),
+			slog.String("user_id", userID.String()),
+			slog.String("error", err.Error()),
+		)
 		return repository.ActivityEvidence{}, apperr.MessageError(apperr.ErrActivityNotFound, err)
 	}
 
@@ -267,7 +267,7 @@ func (s *Service) GetCycleComparison(ctx context.Context, userID uuid.UUID) (*Co
 		UserID: userID, CompletedAt: previous.StartDate, CompletedAt_2: previous.EndDate,
 	})
 
-	// 3. Lógica de De-Para (Map para busca rápida)
+	// 3. Mapping logic (Map for fast lookup)
 	prevMap := make(map[string]int32)
 	var totalPrevXP int32
 	for _, p := range prevPerf {

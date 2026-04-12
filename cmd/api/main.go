@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/config"
+	_ "github.com/me/level-up-hub/docs" // Swagger docs
 	"github.com/me/level-up-hub/internal/account"
 	"github.com/me/level-up-hub/internal/activity"
 	"github.com/me/level-up-hub/internal/database"
@@ -14,6 +15,25 @@ import (
 	"github.com/me/level-up-hub/internal/repository"
 	"github.com/me/level-up-hub/routes"
 )
+
+// @title           Level Up Hub API
+// @version         1.0
+// @description     API para gerenciamento de carreira e desenvolvimento profissional com sistema de XP, atividades e relatórios.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.email  support@leveluphub.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8081
+// @BasePath  /v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Digite 'Bearer' seguido do token JWT
 
 func main() {
 	cfg := config.LoadConfig()

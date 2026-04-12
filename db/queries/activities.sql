@@ -72,6 +72,25 @@ FROM activities
 WHERE user_id = $1 
 ORDER BY created_at DESC;
 
+-- name: ListUserActivitiesPaginated :many
+SELECT 
+    id, 
+    user_id, 
+    ladder_id, 
+    title, 
+    description, 
+    progress_percentage, 
+    impact_summary, 
+    completed_at, 
+    created_at
+FROM activities 
+WHERE user_id = $1 
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountUserActivities :one
+SELECT COUNT(*) FROM activities WHERE user_id = $1;
+
 -- name: FindPdiDashboard :many
 SELECT 
     cl.level,
@@ -140,6 +159,25 @@ JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.user_id = $1
 GROUP BY a.id, cl.level
 ORDER BY a.created_at DESC;
+
+-- name: ListUserActivitiesWithEvidencesPaginated :many
+SELECT 
+    a.id,
+    a.title,
+    a.progress_percentage,
+    cl.level,
+    COALESCE(
+        (SELECT json_agg(ed) FROM (
+            SELECT id, evidence_url, description FROM activity_evidences WHERE activity_id = a.id
+        ) ed), 
+        '[]'
+    )::json as evidences
+FROM activities a
+JOIN career_ladder cl ON a.ladder_id = cl.id
+WHERE a.user_id = $1
+GROUP BY a.id, cl.level
+ORDER BY a.created_at DESC
+LIMIT $2 OFFSET $3;
 
 -- name: FindDetailedActivityReport :many
 SELECT 

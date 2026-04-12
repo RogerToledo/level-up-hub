@@ -31,14 +31,14 @@ func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 		return nil, err
 	}
 
-	// Configurações do pool
+	// Pool configuration
 	poolConfig.MaxConns = int32(cfg.MaxConns)
 	poolConfig.MinConns = int32(cfg.MinConns)
 	poolConfig.MaxConnLifetime = time.Duration(cfg.MaxConnLifetime) * time.Second
 	poolConfig.MaxConnIdleTime = time.Duration(cfg.MaxConnIdleTime) * time.Second
 	poolConfig.HealthCheckPeriod = time.Duration(cfg.HealthCheckPeriod) * time.Second
 
-	// Timeout de conexão
+	// Connection timeout
 	poolConfig.ConnConfig.ConnectTimeout = time.Duration(cfg.ConnectTimeout) * time.Second
 
 	slog.Debug("attempting to connect to database")
@@ -52,7 +52,7 @@ func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 		return nil, err
 	}
 
-	// Testa a conexão
+	// Test connection
 	slog.Debug("pinging database")
 	if err := pool.Ping(ctx); err != nil {
 		slog.Error("database ping failed", slog.String("error", err.Error()))
@@ -60,7 +60,7 @@ func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 		return nil, err
 	}
 
-	// Log de sucesso com estatísticas
+	// Success log with statistics
 	stats := pool.Stat()
 	slog.Info("database connection pool established",
 		slog.Int("total_conns", int(stats.TotalConns())),

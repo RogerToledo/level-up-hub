@@ -13,15 +13,15 @@ type Config struct {
 	DbUrlProd string `env:"DB_URL_PROD" envDefault:"postgres://localhost:5432/prod_db"`
 	Port      string `env:"PORT" envDefault:"8081"`
 	Env       string `env:"ENV" envDefault:"dev"`
-	
+
 	// Connection Pool Settings
-	MaxConns         int `env:"MAX_CONNS" envDefault:"25"`          // Máximo de conexões no pool
-	MinConns         int `env:"MIN_CONNS" envDefault:"5"`           // Mínimo de conexões mantidas
-	MaxConnLifetime  int `env:"MAX_CONN_LIFETIME" envDefault:"3600"`  // Tempo de vida máx da conexão (segundos)
-	MaxConnIdleTime  int `env:"MAX_CONN_IDLE_TIME" envDefault:"1800"` // Tempo máx idle antes de fechar (segundos)
-	HealthCheckPeriod int `env:"HEALTH_CHECK_PERIOD" envDefault:"60"` // Período entre health checks (segundos)
-	ConnectTimeout   int `env:"CONNECT_TIMEOUT" envDefault:"5"`      // Timeout para conectar (segundos)
-	
+	MaxConns          int `env:"MAX_CONNS" envDefault:"25"`            // Maximum connections in pool
+	MinConns          int `env:"MIN_CONNS" envDefault:"5"`             // Minimum connections maintained
+	MaxConnLifetime   int `env:"MAX_CONN_LIFETIME" envDefault:"3600"`  // Maximum connection lifetime (seconds)
+	MaxConnIdleTime   int `env:"MAX_CONN_IDLE_TIME" envDefault:"1800"` // Maximum idle time before closing (seconds)
+	HealthCheckPeriod int `env:"HEALTH_CHECK_PERIOD" envDefault:"60"`  // Period between health checks (seconds)
+	ConnectTimeout    int `env:"CONNECT_TIMEOUT" envDefault:"5"`       // Timeout to connect (seconds)
+
 	JWTSecret string `env:"JWT_SECRET" envDefault:"supersecretkey"`
 }
 

@@ -6,11 +6,11 @@ import (
 	"os"
 )
 
-// Setup configura o logger estruturado baseado no ambiente
+// Setup configures the structured logger based on environment
 func Setup(env string) *slog.Logger {
 	var handler slog.Handler
 
-	// Em produção usa JSON, em dev usa texto legível
+	// Production uses JSON, dev uses readable text
 	if env == "prod" {
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelInfo,

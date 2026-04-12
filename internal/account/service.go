@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/auth"
+	"github.com/me/level-up-hub/internal/pagination"
 	"github.com/me/level-up-hub/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -24,8 +25,8 @@ func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("password encryption failed",
-            slog.String("error", err.Error()),
-        )
+			slog.String("error", err.Error()),
+		)
 		return apperr.MessageError(apperr.ErrEncryptPassword, err)
 	}
 
@@ -36,10 +37,10 @@ func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest) error {
 		Active:   req.Active,
 	})
 	if err != nil {
-		 slog.Error("user creation failed",
-            slog.String("error", err.Error()),
-            slog.String("email", req.Email),
-        )
+		slog.Error("user creation failed",
+			slog.String("error", err.Error()),
+			slog.String("email", req.Email),
+		)
 		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.UserPT), err)
 	}
 
@@ -143,18 +144,18 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, secret string) (L
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
 		slog.Warn("login failed - invalid password",
-            slog.String("email", req.Email),
-            slog.String("user_id", user.ID.String()),
-        )
+			slog.String("email", req.Email),
+			slog.String("user_id", user.ID.String()),
+		)
 		return LoginResponse{}, apperr.MessageError(apperr.ErrInvalidCredentials, err)
 	}
 
 	token, err := auth.GenerateToken(user.ID, string(user.Role), secret)
 	if err != nil {
-		 slog.Error("failed to generate token",
-            slog.String("error", err.Error()),
-            slog.String("user_id", user.ID.String()),
-        )
+		slog.Error("failed to generate token",
+			slog.String("error", err.Error()),
+			slog.String("user_id", user.ID.String()),
+		)
 		return LoginResponse{}, apperr.MessageError(apperr.ErrGenerateToken, err)
 	}
 
@@ -167,4 +168,35 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, secret string) (L
 			Active:   user.Active,
 		},
 	}, nil
+}
+
+// FindAllUsersPaginated returns paginated users
+func (s *Service) FindAllUsersPaginated(ctx context.Context, params pagination.PaginationParams) ([]repository.FindAllUsersPaginatedRow, error) {
+	users, err := s.repo.FindAllUsersPaginated(ctx, repository.FindAllUsersPaginatedParams{
+		Limit:  int32(params.PageSize),
+		Offset: int32(params.Offset),
+	})
+	if err != nil {
+		slog.Error("failed to find paginated users",
+			slog.String("error", err.Error()),
+			slog.Int("page", params.Page),
+			slog.Int("page_size", params.PageSize),
+		)
+		return nil, apperr.MessageError(fmt.Sprintf(apperr.ErrFindAll, apperr.UserPT), err)
+	}
+
+	return users, nil
+}
+
+// CountUsers returns total number of users
+func (s *Service) CountUsers(ctx context.Context) (int64, error) {
+	count, err := s.repo.CountAllUsers(ctx)
+	if err != nil {
+		slog.Error("failed to count users",
+			slog.String("error", err.Error()),
+		)
+		return 0, apperr.MessageError(apperr.ErrInternalServerError, err)
+	}
+
+	return count, nil
 }

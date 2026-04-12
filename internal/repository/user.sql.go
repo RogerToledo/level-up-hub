@@ -9,7 +9,19 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countAllUsers = `-- name: CountAllUsers :one
+SELECT COUNT(*) FROM users
+`
+
+func (q *Queries) CountAllUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createUser = `-- name: CreateUser :exec
 INSERT INTO users (
@@ -70,6 +82,54 @@ func (q *Queries) FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error) {
 			&i.Username,
 			&i.Email,
 			&i.Active,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const findAllUsersPaginated = `-- name: FindAllUsersPaginated :many
+SELECT id, username, email, active, role, created_at 
+FROM users
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type FindAllUsersPaginatedParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type FindAllUsersPaginatedRow struct {
+	ID        uuid.UUID   `json:"id"`
+	Username  string      `json:"username"`
+	Email     string      `json:"email"`
+	Active    bool        `json:"active"`
+	Role      UserRole    `json:"role"`
+	CreatedAt pgtype.Date `json:"created_at"`
+}
+
+func (q *Queries) FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPaginatedParams) ([]FindAllUsersPaginatedRow, error) {
+	rows, err := q.db.Query(ctx, findAllUsersPaginated, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FindAllUsersPaginatedRow
+	for rows.Next() {
+		var i FindAllUsersPaginatedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.Active,
+			&i.Role,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

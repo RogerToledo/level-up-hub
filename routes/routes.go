@@ -11,6 +11,9 @@ import (
 	"github.com/me/level-up-hub/internal/api"
 	"github.com/me/level-up-hub/internal/database"
 	"github.com/me/level-up-hub/internal/ladder"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type RouterConfig struct {
@@ -28,7 +31,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 
 	// Health check endpoint with database connectivity and pool stats
 	r.GET("/health", func(c *gin.Context) {
-		// Verifica saúde do banco
+		// Check database health
 		if err := database.HealthCheck(c.Request.Context(), dbPool); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":   "down",
@@ -38,7 +41,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 			return
 		}
 
-		// Retorna estatísticas do pool
+		// Return pool statistics
 		stats := database.GetPoolStats(dbPool)
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "up",
@@ -50,6 +53,9 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 			},
 		})
 	})
+
+	// Swagger documentation endpoint
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 routes
 

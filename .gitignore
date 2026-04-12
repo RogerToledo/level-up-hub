@@ -7,8 +7,7 @@
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with `go test -c`
+api
 *.test
 
 # Code coverage profiles and other test artifacts
@@ -16,17 +15,59 @@
 coverage.*
 *.coverprofile
 profile.cov
+*.prof
 
-# Dependency directories (remove the comment below to include it)
+# Dependency directories
 vendor/
 
 # Go workspace file
 go.work
 go.work.sum
 
-# env file
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+dist/
+build/
+bin/
+
+# Node (se houver frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

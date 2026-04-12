@@ -24,3 +24,12 @@ SELECT id, username, email, active FROM users WHERE id = $1;
 
 -- name: FindAllUsers :many
 SELECT id, username, email, active FROM users;
+
+-- name: FindAllUsersPaginated :many
+SELECT id, username, email, active, role, created_at 
+FROM users
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountAllUsers :one
+SELECT COUNT(*) FROM users;

@@ -13,6 +13,8 @@ import (
 
 type Querier interface {
 	AddEvidence(ctx context.Context, arg AddEvidenceParams) (ActivityEvidence, error)
+	CountAllUsers(ctx context.Context) (int64, error)
+	CountUserActivities(ctx context.Context, userID uuid.UUID) (int64, error)
 	CreateActivity(ctx context.Context, arg CreateActivityParams) (Activity, error)
 	CreateActivityPillar(ctx context.Context, arg CreateActivityPillarParams) (ActivityPillar, error)
 	CreateLadderLevel(ctx context.Context, arg CreateLadderLevelParams) (CareerLadder, error)
@@ -24,6 +26,7 @@ type Querier interface {
 	FindActivityDetail(ctx context.Context, arg FindActivityDetailParams) (FindActivityDetailRow, error)
 	FindActivityWithLadder(ctx context.Context, arg FindActivityWithLadderParams) (FindActivityWithLadderRow, error)
 	FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error)
+	FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPaginatedParams) ([]FindAllUsersPaginatedRow, error)
 	FindCurrentCycle(ctx context.Context) (EvaluationCycle, error)
 	FindCurrentTargetLevel(ctx context.Context, year int32) (FindCurrentTargetLevelRow, error)
 	FindDetailedActivityReport(ctx context.Context, userID uuid.UUID) ([]FindDetailedActivityReportRow, error)
@@ -39,7 +42,9 @@ type Querier interface {
 	FindUserByID(ctx context.Context, id uuid.UUID) (FindUserByIDRow, error)
 	ListEntireLadder(ctx context.Context) ([]CareerLadder, error)
 	ListUserActivities(ctx context.Context, userID uuid.UUID) ([]ListUserActivitiesRow, error)
+	ListUserActivitiesPaginated(ctx context.Context, arg ListUserActivitiesPaginatedParams) ([]ListUserActivitiesPaginatedRow, error)
 	ListUserActivitiesWithEvidences(ctx context.Context, userID uuid.UUID) ([]ListUserActivitiesWithEvidencesRow, error)
+	ListUserActivitiesWithEvidencesPaginated(ctx context.Context, arg ListUserActivitiesWithEvidencesPaginatedParams) ([]ListUserActivitiesWithEvidencesPaginatedRow, error)
 	UpdateActivityProgress(ctx context.Context, arg UpdateActivityProgressParams) (Activity, error)
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

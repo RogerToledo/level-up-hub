@@ -37,6 +37,17 @@ func (q *Queries) AddEvidence(ctx context.Context, arg AddEvidenceParams) (Activ
 	return i, err
 }
 
+const countUserActivities = `-- name: CountUserActivities :one
+SELECT COUNT(*) FROM activities WHERE user_id = $1
+`
+
+func (q *Queries) CountUserActivities(ctx context.Context, userID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countUserActivities, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createActivity = `-- name: CreateActivity :one
 INSERT INTO activities (
     user_id, 
@@ -638,6 +649,71 @@ func (q *Queries) ListUserActivities(ctx context.Context, userID uuid.UUID) ([]L
 	return items, nil
 }
 
+const listUserActivitiesPaginated = `-- name: ListUserActivitiesPaginated :many
+SELECT 
+    id, 
+    user_id, 
+    ladder_id, 
+    title, 
+    description, 
+    progress_percentage, 
+    impact_summary, 
+    completed_at, 
+    created_at
+FROM activities 
+WHERE user_id = $1 
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListUserActivitiesPaginatedParams struct {
+	UserID uuid.UUID `json:"user_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+type ListUserActivitiesPaginatedRow struct {
+	ID                 uuid.UUID   `json:"id"`
+	UserID             uuid.UUID   `json:"user_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
+	Title              string      `json:"title"`
+	Description        pgtype.Text `json:"description"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
+	CompletedAt        pgtype.Date `json:"completed_at"`
+	CreatedAt          pgtype.Date `json:"created_at"`
+}
+
+func (q *Queries) ListUserActivitiesPaginated(ctx context.Context, arg ListUserActivitiesPaginatedParams) ([]ListUserActivitiesPaginatedRow, error) {
+	rows, err := q.db.Query(ctx, listUserActivitiesPaginated, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserActivitiesPaginatedRow
+	for rows.Next() {
+		var i ListUserActivitiesPaginatedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.LadderID,
+			&i.Title,
+			&i.Description,
+			&i.ProgressPercentage,
+			&i.ImpactSummary,
+			&i.CompletedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserActivitiesWithEvidences = `-- name: ListUserActivitiesWithEvidences :many
 SELECT 
     a.id,
@@ -674,6 +750,66 @@ func (q *Queries) ListUserActivitiesWithEvidences(ctx context.Context, userID uu
 	var items []ListUserActivitiesWithEvidencesRow
 	for rows.Next() {
 		var i ListUserActivitiesWithEvidencesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ProgressPercentage,
+			&i.Level,
+			&i.Evidences,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserActivitiesWithEvidencesPaginated = `-- name: ListUserActivitiesWithEvidencesPaginated :many
+SELECT 
+    a.id,
+    a.title,
+    a.progress_percentage,
+    cl.level,
+    COALESCE(
+        (SELECT json_agg(ed) FROM (
+            SELECT id, evidence_url, description FROM activity_evidences WHERE activity_id = a.id
+        ) ed), 
+        '[]'
+    )::json as evidences
+FROM activities a
+JOIN career_ladder cl ON a.ladder_id = cl.id
+WHERE a.user_id = $1
+GROUP BY a.id, cl.level
+ORDER BY a.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListUserActivitiesWithEvidencesPaginatedParams struct {
+	UserID uuid.UUID `json:"user_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+type ListUserActivitiesWithEvidencesPaginatedRow struct {
+	ID                 uuid.UUID   `json:"id"`
+	Title              string      `json:"title"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	Level              LadderLevel `json:"level"`
+	Evidences          []byte      `json:"evidences"`
+}
+
+func (q *Queries) ListUserActivitiesWithEvidencesPaginated(ctx context.Context, arg ListUserActivitiesWithEvidencesPaginatedParams) ([]ListUserActivitiesWithEvidencesPaginatedRow, error) {
+	rows, err := q.db.Query(ctx, listUserActivitiesWithEvidencesPaginated, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserActivitiesWithEvidencesPaginatedRow
+	for rows.Next() {
+		var i ListUserActivitiesWithEvidencesPaginatedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
