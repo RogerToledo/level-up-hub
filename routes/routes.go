@@ -5,13 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/me/level-up-hub/apperr"
 	"github.com/me/level-up-hub/config"
 	"github.com/me/level-up-hub/internal/account"
 	"github.com/me/level-up-hub/internal/activity"
 	"github.com/me/level-up-hub/internal/api"
+	"github.com/me/level-up-hub/internal/database"
 	"github.com/me/level-up-hub/internal/ladder"
-	"github.com/me/level-up-hub/internal/rest"
 )
 
 type RouterConfig struct {
@@ -27,14 +26,29 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 		gin.Recovery(),
 	)
 
-	// Health check endpoint to verify database connectivity
+	// Health check endpoint with database connectivity and pool stats
 	r.GET("/health", func(c *gin.Context) {
-		err := dbPool.Ping(c.Request.Context())
-		if err != nil {
-				rest.Error(c.Writer, http.StatusServiceUnavailable, apperr.ErrInternalServerError, err)
+		// Verifica saúde do banco
+		if err := database.HealthCheck(c.Request.Context(), dbPool); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":   "down",
+				"database": "unreachable",
+				"error":    err.Error(),
+			})
 			return
 		}
-		rest.Send(c.Writer, apperr.Ok, http.StatusOK)
+
+		// Retorna estatísticas do pool
+		stats := database.GetPoolStats(dbPool)
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "up",
+			"database": "ok",
+			"pool_stats": gin.H{
+				"total_conns": stats.TotalConns,
+				"idle_conns":  stats.IdleConns,
+				"max_conns":   stats.MaxConns,
+			},
+		})
 	})
 
 	// API v1 routes
