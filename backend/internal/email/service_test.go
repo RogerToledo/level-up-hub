@@ -156,8 +156,7 @@ func TestEmailAddressValidation(t *testing.T) {
 			// Simple email validation logic
 			hasAt := false
 			hasDot := false
-			parts := []string{}
-			
+
 			for i, c := range tt.email {
 				if c == '@' {
 					hasAt = true
@@ -169,7 +168,7 @@ func TestEmailAddressValidation(t *testing.T) {
 					hasDot = true
 				}
 			}
-			
+
 			isValid := tt.email != "" && hasAt && hasDot
 			assert.Equal(t, tt.isValid, isValid)
 		})
@@ -235,7 +234,7 @@ func TestSMTPAuthValidation(t *testing.T) {
 // Benchmark tests
 func BenchmarkEncodeBase64(b *testing.B) {
 	data := []byte("This is a test message for benchmarking base64 encoding performance")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = encodeBase64(data)

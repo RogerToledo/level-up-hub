@@ -1,5 +1,4 @@
 package activity
-package activity
 
 import (
 	"bytes"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/me/level-up-hub/backend/config"
-	"github.com/me/level-up-hub/backend/internal/email"
 	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
@@ -113,7 +110,7 @@ func TestUpdateActivityDTO_ToRepositoryParams(t *testing.T) {
 
 func TestDashboardResponse_Initialization(t *testing.T) {
 	resp := &DashboardResponse{
-		OfficialLevel: "P2",
+		OfficialLevel: repository.LadderLevelP2,
 		TargetLevel:   repository.LadderLevelP3,
 		PdiProgress:   make(map[string]PillarStats),
 		Overdelivery:  make(map[string]int32),
@@ -121,7 +118,7 @@ func TestDashboardResponse_Initialization(t *testing.T) {
 		TotalAchieved: 750,
 	}
 
-	assert.Equal(t, "P2", resp.OfficialLevel)
+	assert.Equal(t, repository.LadderLevelP2, resp.OfficialLevel)
 	assert.Equal(t, repository.LadderLevelP3, resp.TargetLevel)
 	assert.NotNil(t, resp.PdiProgress)
 	assert.NotNil(t, resp.Overdelivery)

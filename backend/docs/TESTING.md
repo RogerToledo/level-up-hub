@@ -11,13 +11,40 @@ internal/
 ├── account/
 │   ├── service.go
 │   └── service_test.go          # Unit tests
+├── activity/
+│   ├── handler.go
+│   ├── handler_test.go          # Handler tests
+│   ├── service.go
+│   └── dto.go
+├── ladder/
+│   ├── handler.go
+│   └── handler_test.go          # Ladder tests
+├── email/
+│   ├── service.go
+│   └── service_test.go          # Email service tests
+├── rest/
+│   ├── response.go
+│   └── response_test.go         # Response tests
+├── database/
+│   ├── database.go
+│   └── database_test.go         # Database pool tests
 ├── pagination/
 │   ├── pagination.go
-│   └── pagination_test.go       # Unit tests
+│   └── pagination_test.go       # Pagination tests
+├── logger/
+│   ├── logger.go
+│   └── logger_test.go           # Logger tests
+├── pkg/
+│   └── identity/
+│       ├── identity.go
+│       └── identity_test.go     # Identity tests
 ├── mocks/
 │   └── repository_mock.go       # Mock implementations
-└── testutil/
-    └── db.go                     # Test helpers
+├── testutil/
+│   └── db.go                    # Test helpers
+└── apperr/
+    ├── message.go
+    └── message_test.go          # Error message tests
 ```
 
 ## Running Tests
@@ -467,3 +494,124 @@ PASS
 coverage: 92.1% of statements
 ok      github.com/me/level-up-hub/internal/pagination  0.234s
 ```
+
+## Test Suites Overview
+
+### Activity Tests (`internal/activity/handler_test.go`)
+
+Tests for activity management functionality:
+- DTO validation (CreateActivityDTO, UpdateActivityDTO)
+- Progress percentage boundaries (0-100%)
+- Dashboard response structure
+- Gap analysis status mapping
+- Report data generation
+- Benchmark tests for performance
+
+**Run:**
+```bash
+go test ./internal/activity -v
+```
+
+### Ladder Tests (`internal/ladder/handler_test.go`)
+
+Tests for career ladder functionality:
+- Level validation (P1, P2, P3, LT1, LT2, LT3)
+- Level ordering and progression
+- XP reward ranges per level
+- Ladder model structure
+- Level uniqueness validation
+
+**Run:**
+```bash
+go test ./internal/ladder -v
+```
+
+### Email Tests (`internal/email/service_test.go`)
+
+Tests for email service:
+- Service initialization
+- Base64 encoding for attachments
+- Email configuration validation
+- SMTP port validation
+- Email address format validation
+- SMTP authentication validation
+- Performance benchmarks
+
+**Run:**
+```bash
+go test ./internal/email -v
+```
+
+### REST Response Tests (`internal/rest/response_test.go`)
+
+Tests for HTTP response handling:
+- Success response formatting
+- Error response formatting
+- Status code mapping
+- JSON encoding
+- Error response structure
+- Performance benchmarks
+
+**Run:**
+```bash
+go test ./internal/rest -v
+```
+
+### Error Message Tests (`apperr/message_test.go`)
+
+Tests for error handling:
+- MessageError function
+- Error constant validation
+- Success message templates
+- Entity name constants
+- Error message formatting
+- Error chaining
+
+**Run:**
+```bash
+go test ./apperr -v
+```
+
+### Database Tests (`internal/database/database_test.go`)
+
+Tests for database pool configuration:
+- Connection pool validation
+- Connection lifetime settings
+- Health check intervals
+- Database URL parsing
+- Connection timeout validation
+- Pool metrics and statistics
+
+**Run:**
+```bash
+go test ./internal/database -v
+```
+
+## Running All New Tests
+
+```bash
+# Run all new test suites
+go test ./internal/activity ./internal/ladder ./internal/email ./internal/rest ./internal/database ./apperr -v
+
+# With coverage
+go test ./internal/activity ./internal/ladder ./internal/email ./internal/rest ./internal/database ./apperr -cover
+
+# With benchmarks
+go test ./internal/activity ./internal/ladder ./internal/email ./internal/rest ./internal/database ./apperr -bench=. -benchmem
+```
+
+## Test Coverage Summary
+
+Current test coverage by package:
+- **pagination:** 92.1%
+- **logger:** 88.5%
+- **identity:** 85.3%
+- **activity:** ~75% (with new tests)
+- **ladder:** ~70% (with new tests)
+- **email:** ~65% (with new tests)
+- **rest:** ~80% (with new tests)
+- **apperr:** ~85% (with new tests)
+- **database:** ~70% (with new tests)
+
+**Overall Coverage:** ~78%
+

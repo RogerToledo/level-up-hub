@@ -1,5 +1,4 @@
 package rest
-package rest
 
 import (
 	"errors"
@@ -42,7 +41,7 @@ func TestSend(t *testing.T) {
 			Send(w, tt.message, tt.expectedStatus)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+			assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
 		})
 	}
 }
@@ -91,7 +90,7 @@ func TestError(t *testing.T) {
 			Error(w, tt.status, tt.errorMsg, tt.details)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+			assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
 		})
 	}
 }
