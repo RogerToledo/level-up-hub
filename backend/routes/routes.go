@@ -85,22 +85,29 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/users/:id", cfg.UserHandler.FindByID)
 
 	protected.POST("/activities", cfg.ActivityHandler.Create)
+	protected.GET("/activities", cfg.ActivityHandler.List)
+	protected.PUT("/activities/:id", cfg.ActivityHandler.Update)
 	protected.PATCH("/activities/:id", cfg.ActivityHandler.UpdateProgress)
 	protected.DELETE("/activities/:id", cfg.ActivityHandler.Delete)
 	protected.GET("/dashboard", cfg.ActivityHandler.GetDashboard)
 	protected.POST("/activities/:id/evidence", cfg.ActivityHandler.AddEvidence)
+	protected.GET("/activities/:id/evidences", cfg.ActivityHandler.GetActivityEvidences)
 	protected.GET("/activities/evidence", cfg.ActivityHandler.GetActivitiesEvidences)
 	protected.GET("/report", cfg.ActivityHandler.GetDetailedReport)
 	protected.GET("/gap-analysis", cfg.ActivityHandler.GetGapAnalysis)
 	protected.GET("/career-radar", cfg.ActivityHandler.GetReadinessCheck)
 	protected.GET("/cycle-comparison", cfg.ActivityHandler.GetCycleComparison)
 	protected.GET("/report/pdf", cfg.ActivityHandler.DownloadReportPDF)
+	protected.POST("/report/send-to-manager", cfg.ActivityHandler.SendReportToManager)
+	protected.GET("/ladders", cfg.LadderHandler.List)
 
 	// Admin-only routes
 	admin := protected.Group("/")
 	admin.Use(api.AdminOnly())
 	admin.DELETE("/users/:id", cfg.UserHandler.Delete)
 	admin.GET("/users", cfg.UserHandler.FindAll)
+	admin.POST("/users", cfg.UserHandler.Register)
+	admin.PUT("/users/:id", cfg.UserHandler.Update)
 
 	admin.POST("/ladder", cfg.LadderHandler.Create)
 

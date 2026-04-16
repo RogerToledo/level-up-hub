@@ -20,12 +20,14 @@ export default function LoginPage() {
     try {
       const response = await api.post("/login", { email, password });
       
-      if (response.message && response.message.token && response.message.token.token) {
-        localStorage.setItem("career_token", response.message.token.token);
-        localStorage.setItem("user_name", response.message.token.user.username);
+      if (response.token && response.user) {
+        localStorage.setItem("career_token", response.token);
+        localStorage.setItem("user_id", response.user.id);
+        localStorage.setItem("user_name", response.user.username);
+        localStorage.setItem("user_role", response.user.role);
         router.push("/dashboard"); 
       } else {
-        setError("Formato de token não reconhecido pelo sistema.");
+        setError("Formato de resposta não reconhecido pelo sistema.");
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

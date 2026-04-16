@@ -25,17 +25,18 @@ func (q *Queries) CountAllUsers(ctx context.Context) (int64, error) {
 
 const createUser = `-- name: CreateUser :exec
 INSERT INTO users (
-    username, email, password, active
+    username, email, password, active, current_level
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5
 )
 `
 
 type CreateUserParams struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Active   bool   `json:"active"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	Active       bool        `json:"active"`
+	CurrentLevel LadderLevel `json:"current_level"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
@@ -44,6 +45,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 		arg.Email,
 		arg.Password,
 		arg.Active,
+		arg.CurrentLevel,
 	)
 	return err
 }
@@ -58,14 +60,15 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const findAllUsers = `-- name: FindAllUsers :many
-SELECT id, username, email, active FROM users
+SELECT id, username, email, active, current_level FROM users
 `
 
 type FindAllUsersRow struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
-	Active   bool      `json:"active"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Active       bool        `json:"active"`
+	CurrentLevel LadderLevel `json:"current_level"`
 }
 
 func (q *Queries) FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error) {
@@ -82,6 +85,7 @@ func (q *Queries) FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error) {
 			&i.Username,
 			&i.Email,
 			&i.Active,
+			&i.CurrentLevel,
 		); err != nil {
 			return nil, err
 		}
@@ -94,7 +98,7 @@ func (q *Queries) FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error) {
 }
 
 const findAllUsersPaginated = `-- name: FindAllUsersPaginated :many
-SELECT id, username, email, active, role, created_at 
+SELECT id, username, email, active, role, current_level, created_at 
 FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -106,12 +110,13 @@ type FindAllUsersPaginatedParams struct {
 }
 
 type FindAllUsersPaginatedRow struct {
-	ID        uuid.UUID   `json:"id"`
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	Active    bool        `json:"active"`
-	Role      UserRole    `json:"role"`
-	CreatedAt pgtype.Date `json:"created_at"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Active       bool        `json:"active"`
+	Role         UserRole    `json:"role"`
+	CurrentLevel LadderLevel `json:"current_level"`
+	CreatedAt    pgtype.Date `json:"created_at"`
 }
 
 func (q *Queries) FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPaginatedParams) ([]FindAllUsersPaginatedRow, error) {
@@ -129,6 +134,7 @@ func (q *Queries) FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPag
 			&i.Email,
 			&i.Active,
 			&i.Role,
+			&i.CurrentLevel,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -142,16 +148,17 @@ func (q *Queries) FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPag
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, username, email, password, active, role FROM users WHERE email = $1
+SELECT id, username, email, password, active, role, current_level FROM users WHERE email = $1
 `
 
 type FindUserByEmailRow struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
-	Password string    `json:"password"`
-	Active   bool      `json:"active"`
-	Role     UserRole  `json:"role"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	Active       bool        `json:"active"`
+	Role         UserRole    `json:"role"`
+	CurrentLevel LadderLevel `json:"current_level"`
 }
 
 func (q *Queries) FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error) {
@@ -164,19 +171,24 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (FindUserBy
 		&i.Password,
 		&i.Active,
 		&i.Role,
+		&i.CurrentLevel,
 	)
 	return i, err
 }
 
 const findUserByID = `-- name: FindUserByID :one
-SELECT id, username, email, active FROM users WHERE id = $1
+SELECT id, username, email, password, active, current_level, manager_name, manager_email FROM users WHERE id = $1
 `
 
 type FindUserByIDRow struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
-	Active   bool      `json:"active"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	Active       bool        `json:"active"`
+	CurrentLevel LadderLevel `json:"current_level"`
+	ManagerName  pgtype.Text `json:"manager_name"`
+	ManagerEmail pgtype.Text `json:"manager_email"`
 }
 
 func (q *Queries) FindUserByID(ctx context.Context, id uuid.UUID) (FindUserByIDRow, error) {
@@ -186,7 +198,11 @@ func (q *Queries) FindUserByID(ctx context.Context, id uuid.UUID) (FindUserByIDR
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.Password,
 		&i.Active,
+		&i.CurrentLevel,
+		&i.ManagerName,
+		&i.ManagerEmail,
 	)
 	return i, err
 }
@@ -196,16 +212,22 @@ UPDATE users SET
     username = $2,
     email = $3,
     password = $4,
-    active = $5
+    active = $5,
+    current_level = $6,
+    manager_name = $7,
+    manager_email = $8
 WHERE id = $1
 `
 
 type UpdateUserParams struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
-	Password string    `json:"password"`
-	Active   bool      `json:"active"`
+	ID           uuid.UUID   `json:"id"`
+	Username     string      `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	Active       bool        `json:"active"`
+	CurrentLevel LadderLevel `json:"current_level"`
+	ManagerName  pgtype.Text `json:"manager_name"`
+	ManagerEmail pgtype.Text `json:"manager_email"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
@@ -215,6 +237,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.Email,
 		arg.Password,
 		arg.Active,
+		arg.CurrentLevel,
+		arg.ManagerName,
+		arg.ManagerEmail,
 	)
 	return err
 }

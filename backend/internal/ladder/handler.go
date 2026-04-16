@@ -39,3 +39,17 @@ func (h *LadderHandler) Create(c *gin.Context) {
 
 	rest.Send(c.Writer, fmt.Sprintf(apperr.OkCreate, apperr.LadderPT), http.StatusCreated)
 }
+
+// List handles retrieving all career ladder levels.
+func (h *LadderHandler) List(c *gin.Context) {
+	ladders, err := h.queries.ListAllLadders(c.Request.Context())
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+	// Garante que sempre retorna um array, mesmo que vazio
+	if ladders == nil {
+		ladders = []repository.CareerLadder{}
+	}
+	rest.Send(c.Writer, ladders, http.StatusOK)
+}

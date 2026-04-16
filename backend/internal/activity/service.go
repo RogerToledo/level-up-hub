@@ -126,6 +126,21 @@ func (s *Service) UpdateProgress(ctx context.Context, activityID uuid.UUID, user
 	return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.ActivityPT), err)
 }
 
+func (s *Service) Update(ctx context.Context, activityID uuid.UUID, userID uuid.UUID, dto UpdateActivityDTO) error {
+	params := dto.ToRepositoryParams(activityID, userID)
+
+	_, err := s.repo.UpdateActivity(ctx, params)
+	if err != nil {
+		slog.Error("failed to update activity",
+			slog.String("activity_id", activityID.String()),
+			slog.String("error", err.Error()),
+		)
+		return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.ActivityPT), err)
+	}
+
+	return nil
+}
+
 func (s *Service) Delete(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) error {
 	err := s.repo.DeleteActivity(ctx, repository.DeleteActivityParams{
 		ID:     activityID,
@@ -138,40 +153,43 @@ func (s *Service) Delete(ctx context.Context, activityID uuid.UUID, userID uuid.
 }
 
 func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*DashboardResponse, error) {
+	// 1. Busque o usuário para saber o nível oficial (exemplo)
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := s.repo.FindPdiDashboard(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &DashboardResponse{
-		PdiProgress:  make(map[string]PillarStats),
-		Overdelivery: make(map[string]int32),
+		OfficialLevel: user.CurrentLevel, // Nível do RH
+		PdiProgress:   make(map[string]PillarStats),
+		Overdelivery:  make(map[string]int32),
 	}
 
+	var highestTarget repository.LadderLevel = ""
 	for _, row := range rows {
-		pillarName := row.Pillar
+		if string(row.Level) > string(highestTarget) {
+			highestTarget = row.Level
+		}
 
-		resp.CurrentLevel = string(row.Level)
+		percentage := (float64(row.TotalAchieved) / float64(row.TotalPdiPlanned)) * 100
+
 		resp.MaxPdiXp += row.TotalPdiPlanned
 		resp.TotalAchieved += row.TotalAchieved
-
-		if row.TotalPdiPlanned > 0 {
-			percentage := (float64(row.TotalAchieved) / float64(row.TotalPdiPlanned)) * 100
-
-			resp.PdiProgress[pillarName] = PillarStats{
-				Achieved:   row.TotalAchieved,
-				Planned:    row.TotalPdiPlanned,
-				Percentage: percentage,
-			}
+		resp.PdiProgress[row.Pillar] = PillarStats{
+			Achieved:   row.TotalAchieved,
+			Planned:    row.TotalPdiPlanned,
+			Percentage: percentage,
 		}
-
-		if row.OverdeliveryXp > 0 {
-			resp.Overdelivery[pillarName] += row.OverdeliveryXp
-		}
+		resp.Overdelivery[row.Pillar] = row.OverdeliveryXp
 	}
 
+	resp.TargetLevel = highestTarget
 	return resp, nil
-
 }
 
 func (s *Service) ListActivities(ctx context.Context, userID uuid.UUID) ([]repository.ListUserActivitiesRow, error) {
@@ -182,8 +200,38 @@ func (s *Service) GetActivitiesEvidence(ctx context.Context, userID uuid.UUID) (
 	return s.repo.ListUserActivitiesWithEvidences(ctx, userID)
 }
 
+func (s *Service) GetActivityEvidences(ctx context.Context, activityID uuid.UUID) ([]repository.ActivityEvidence, error) {
+	return s.repo.FindEvidencesByActivity(ctx, activityID)
+}
+
 func (s *Service) GetDetailedReport(ctx context.Context, userID uuid.UUID) ([]repository.FindDetailedActivityReportRow, error) {
 	return s.repo.FindDetailedActivityReport(ctx, userID)
+}
+
+func (s *Service) GetDetailedReportData(ctx context.Context, userID uuid.UUID) (ReportData, error) {
+	// Buscar atividades
+	activities, err := s.repo.FindDetailedActivityReport(ctx, userID)
+	if err != nil {
+		return ReportData{}, err
+	}
+
+	// Buscar informações do usuário
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		// Se não conseguir buscar o usuário, retorna apenas as atividades
+		return ReportData{
+			Activities: activities,
+			UserName:   "Colaborador",
+			UserEmail:  "",
+		}, nil
+	}
+
+	return ReportData{
+		Activities:   activities,
+		UserName:     user.Username,
+		UserEmail:    user.Email,
+		CurrentLevel: string(user.CurrentLevel),
+	}, nil
 }
 
 func (s *Service) GetGapAnalysis(ctx context.Context, userID uuid.UUID, year int) ([]GapAnalysisResponse, error) {
@@ -279,6 +327,7 @@ func (s *Service) GetCycleComparison(ctx context.Context, userID uuid.UUID) (*Co
 	report := &ComparisonReport{
 		CurrentCycleName:  current.Name,
 		PreviousCycleName: previous.Name,
+		LevelEvolution:    []LevelComparison{}, // Garante array vazio ao invés de nil
 	}
 
 	for _, c := range currentPerf {

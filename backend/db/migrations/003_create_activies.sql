@@ -24,7 +24,7 @@ CREATE TABLE activity_evidences (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     activity_id uuid NOT NULL,
     evidence_url TEXT NOT NULL,
-    description TEXT, -- Ex: "PR de migração", "Print do Slack"
+    description TEXT, -- Ex: "Migration PR", "Slack Screenshot"
     created_at DATE NOT NULL DEFAULT CURRENT_DATE,
     CONSTRAINT activity_evidences_pk PRIMARY KEY (id),
     CONSTRAINT activity_evidences_activity_fk FOREIGN KEY (activity_id) 

@@ -31,3 +31,16 @@ func (s *Service) CreateLadderLevel(ctx context.Context, params repository.Creat
 
 	return nil
 }
+
+// ListAllLadders returns all available career ladder levels.
+func (s *Service) ListAllLadders(ctx context.Context) ([]repository.CareerLadder, error) {
+	ladders, err := s.repo.ListEntireLadder(ctx)
+	if err != nil {
+		slog.Error("failed to list ladder levels",
+			slog.String("error", err.Error()),
+		)
+		return nil, apperr.MessageError(apperr.ErrListLadderLevels, err)
+	}
+
+	return ladders, nil
+}

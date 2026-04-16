@@ -25,6 +25,18 @@ SET
 WHERE id = $1 AND user_id = $3
 RETURNING *;
 
+-- name: UpdateActivity :one
+UPDATE activities 
+SET 
+    title = $2,
+    description = $3,
+    progress_percentage = $4,
+    impact_summary = $5,
+    is_pdi_target = $6,
+    updated_at = NOW()
+WHERE id = $1 AND user_id = $7
+RETURNING *;
+
 -- name: DeleteActivity :exec
 DELETE FROM activities 
 WHERE id = $1 AND user_id = $2;
@@ -59,18 +71,20 @@ WHERE a.id = $1 AND a.user_id = $2;
 
 -- name: ListUserActivities :many
 SELECT 
-    id, 
-    user_id, 
-    ladder_id, 
-    title, 
-    description, 
-    progress_percentage, 
-    impact_summary, 
-    completed_at, 
-    created_at
-FROM activities 
-WHERE user_id = $1 
-ORDER BY created_at DESC;
+    a.id, 
+    a.user_id, 
+    a.ladder_id, 
+    a.title, 
+    a.description, 
+    a.progress_percentage, 
+    a.impact_summary, 
+    a.is_pdi_target,
+    a.completed_at, 
+    a.created_at,
+    (SELECT COUNT(*) FROM activity_evidences WHERE activity_id = a.id)::int as evidence_count
+FROM activities a
+WHERE a.user_id = $1 
+ORDER BY a.created_at DESC;
 
 -- name: ListUserActivitiesPaginated :many
 SELECT 
@@ -95,11 +109,8 @@ SELECT COUNT(*) FROM activities WHERE user_id = $1;
 SELECT 
     cl.level,
     ap.pillar::text as pillar,
-    -- Soma tudo o que foi planejado no PDI (independente de estar pronto)
     SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as total_pdi_planned,
-    -- Soma apenas o que foi de fato concluído
     SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as total_achieved,
-    -- XP extra: o que foi concluído mas NÃO estava no PDI original
     SUM(CASE WHEN a.progress_percentage = 100 AND a.is_pdi_target = false THEN cl.xp_reward ELSE 0 END)::int as overdelivery_xp,
     COUNT(a.id)::int as activity_count
 FROM activities a
@@ -223,7 +234,7 @@ FROM xp_target xt
 JOIN career_ladder cl ON xt.ladder_id = cl.id
 LEFT JOIN activities a ON a.ladder_id = cl.id AND a.user_id = $1
 LEFT JOIN activity_pillars ap ON a.id = ap.activity_id
-WHERE xt.year = $2 -- Analisamos o gap para o ano corrente
+WHERE xt.year = $2 AND ap.pillar IS NOT NULL
 GROUP BY cl.level, ap.pillar, xt.target
 ORDER BY cl.level, ap.pillar;
 

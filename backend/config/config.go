@@ -25,6 +25,14 @@ type Config struct {
 	ConnectTimeout    int `env:"CONNECT_TIMEOUT" envDefault:"5"`       // Timeout to connect (seconds)
 
 	JWTSecret string `env:"JWT_SECRET" envDefault:"supersecretkey"`
+
+	// Email/SMTP Settings
+	SMTPHost     string `env:"SMTP_HOST" envDefault:"smtp.gmail.com"`
+	SMTPPort     int    `env:"SMTP_PORT" envDefault:"587"`
+	SMTPUser     string `env:"SMTP_USER" envDefault:""`
+	SMTPPassword string `env:"SMTP_PASSWORD" envDefault:""`
+	SMTPFrom     string `env:"SMTP_FROM" envDefault:"noreply@leveluphub.com"`
+	SMTPFromName string `env:"SMTP_FROM_NAME" envDefault:"Level Up Hub"`
 }
 
 var (

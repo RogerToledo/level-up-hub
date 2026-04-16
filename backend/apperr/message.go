@@ -6,7 +6,7 @@ package apperr
 // These constants provide consistent error and success messages across the application.
 const (
 	UserEN        = "user"
-	UserPT        = "usuário"
+	UserPT        = "user"
 	LadderEN      = "ladder level"
 	LadderPT      = "nível da ladder"
 	ActivityEN    = "activity"
@@ -49,15 +49,16 @@ const (
 	ErrIsRestric                = "O %s está sendo usado e não pode ser deletado"
 	ErrIsRestricF               = "A %s está sendo usada e não pode ser deletada"
 	ErrEncryptPassword          = "Erro ao criptografar a senha"
-	ErrInvalidCredentials       = "Email ou senha inválidos"
+	ErrInvalidCredentials       = "Invalid email or password"
 	ErrGenerateToken            = "Erro ao gerar token"
 	ErrRequiredToken            = "Token de autenticação é necessário"
 	ErrInvalidToken             = "Token de autenticação inválido"
 	ErrAdminOnly                = "Acesso restrito a administradores"
-	ErrActivityNotFound         = "atividade não encontrada ou não pertence ao usuário"
+	ErrActivityNotFound         = "activity not found or does not belong to user"
 	ErrInvalidProgress          = "progresso deve estar entre 0 e 100"
-	ErrUnauthorized             = "usuário não autenticado"
+	ErrUnauthorized             = "user not authenticated"
 	ErrStatusServiceUnavailable = "Serviço indisponível"
+	ErrListLadderLevels         = "Erro ao listar os níveis da ladder"
 
 	ErrorGenID            = "error creating id"
 	ErrorExecute          = "error executing query"

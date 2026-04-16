@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/me/level-up-hub/backend/apperr"
 	"github.com/me/level-up-hub/backend/auth"
 	"github.com/me/level-up-hub/backend/internal/pagination"
@@ -30,11 +31,18 @@ func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest) error {
 		return apperr.MessageError(apperr.ErrEncryptPassword, err)
 	}
 
+	// Define o nível inicial (P1 se não especificado)
+	currentLevel := repository.LadderLevelP1
+	if req.CurrentLevel != "" {
+		currentLevel = repository.LadderLevel(req.CurrentLevel)
+	}
+
 	err = s.repo.CreateUser(ctx, repository.CreateUserParams{
-		Username: req.Username,
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Active:   req.Active,
+		Username:     req.Username,
+		Email:        req.Email,
+		Password:     string(hashedPassword),
+		Active:       req.Active,
+		CurrentLevel: currentLevel,
 	})
 	if err != nil {
 		slog.Error("user creation failed",
@@ -47,26 +55,54 @@ func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest) error {
 	return nil
 }
 
-func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, req CreateUserRequest) error {
-	if _, err := s.repo.FindUserByID(ctx, id); err != nil {
+func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, req UpdateUserRequest) error {
+	// Busca o usuário atual
+	currentUser, err := s.repo.FindUserByID(ctx, id)
+	if err != nil {
 		return err
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		slog.Error("password encryption failed",
-			slog.String("error", err.Error()),
-			slog.String("user_id", id.String()),
-		)
-		return apperr.MessageError(apperr.ErrEncryptPassword, err)
+	// Se a senha foi enviada, criptografa a nova senha
+	// Se não foi enviada (vazia), mantém a senha atual
+	password := currentUser.Password
+	if req.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			slog.Error("password encryption failed",
+				slog.String("error", err.Error()),
+				slog.String("user_id", id.String()),
+			)
+			return apperr.MessageError(apperr.ErrEncryptPassword, err)
+		}
+		password = string(hashedPassword)
+	}
+
+	// Define o current_level (mantém o atual se não especificado)
+	currentLevel := currentUser.CurrentLevel
+	if req.CurrentLevel != "" {
+		currentLevel = repository.LadderLevel(req.CurrentLevel)
+	}
+
+	// Converte manager fields para pgtype.Text
+	managerName := pgtype.Text{}
+	if req.ManagerName != "" {
+		managerName = pgtype.Text{String: req.ManagerName, Valid: true}
+	}
+
+	managerEmail := pgtype.Text{}
+	if req.ManagerEmail != "" {
+		managerEmail = pgtype.Text{String: req.ManagerEmail, Valid: true}
 	}
 
 	err = s.repo.UpdateUser(ctx, repository.UpdateUserParams{
-		ID:       id,
-		Username: req.Username,
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Active:   req.Active,
+		ID:           id,
+		Username:     req.Username,
+		Email:        req.Email,
+		Password:     password,
+		Active:       req.Active,
+		CurrentLevel: currentLevel,
+		ManagerName:  managerName,
+		ManagerEmail: managerEmail,
 	})
 	if err != nil {
 		slog.Error("user update failed",
@@ -166,6 +202,7 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, secret string) (L
 			Username: user.Username,
 			Email:    user.Email,
 			Active:   user.Active,
+			Role:     string(user.Role),
 		},
 	}, nil
 }

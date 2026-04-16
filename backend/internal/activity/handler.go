@@ -9,17 +9,24 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/me/level-up-hub/backend/apperr"
 	"github.com/me/level-up-hub/backend/config"
+	"github.com/me/level-up-hub/backend/internal/email"
 	"github.com/me/level-up-hub/backend/internal/pkg/identity"
+	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/me/level-up-hub/backend/internal/rest"
 )
 
 type ActivityHandler struct {
-	queries *Service
-	cfg     *config.Config
+	queries      *Service
+	cfg          *config.Config
+	emailService *email.Service
 }
 
-func NewHandler(s *Service, cfg *config.Config) *ActivityHandler {
-	return &ActivityHandler{queries: s, cfg: cfg}
+func NewHandler(s *Service, cfg *config.Config, emailService *email.Service) *ActivityHandler {
+	return &ActivityHandler{
+		queries:      s,
+		cfg:          cfg,
+		emailService: emailService,
+	}
 }
 
 func (h *ActivityHandler) Create(c *gin.Context) {
@@ -84,6 +91,27 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 	rest.Send(c.Writer, evidence, http.StatusCreated)
 }
 
+func (h *ActivityHandler) GetActivityEvidences(c *gin.Context) {
+	activityID, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	evidences, err := h.queries.GetActivityEvidences(c.Request.Context(), activityID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	// Garante que sempre retorna um array, mesmo que vazio
+	if evidences == nil {
+		evidences = []repository.ActivityEvidence{}
+	}
+
+	rest.Send(c.Writer, evidences, http.StatusOK)
+}
+
 func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 	id, err := identity.ValidateIDParam(c)
 	if err != nil {
@@ -114,6 +142,33 @@ func (h *ActivityHandler) UpdateProgress(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *ActivityHandler) Update(c *gin.Context) {
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	var dto UpdateActivityDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	if err := h.queries.Update(c.Request.Context(), id, userID, dto); err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	rest.Send(c.Writer, gin.H{"message": "Activity updated successfully"}, http.StatusOK)
+}
+
 func (h *ActivityHandler) Delete(c *gin.Context) {
 	id, err := identity.ValidateIDParam(c)
 	if err != nil {
@@ -133,6 +188,27 @@ func (h *ActivityHandler) Delete(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *ActivityHandler) List(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	activities, err := h.queries.ListActivities(c.Request.Context(), userID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	// Garante que sempre retorna um array, mesmo que vazio
+	if activities == nil {
+		activities = []repository.ListUserActivitiesRow{}
+	}
+
+	rest.Send(c.Writer, activities, http.StatusOK)
 }
 
 func (h *ActivityHandler) GetDashboard(c *gin.Context) {
@@ -163,7 +239,10 @@ func (h *ActivityHandler) GetActivitiesEvidences(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
+	// Garante que sempre retorna um array, mesmo que vazio
+	if activities == nil {
+		activities = []repository.ListUserActivitiesWithEvidencesRow{}
+	}
 	rest.Send(c.Writer, activities, http.StatusOK)
 }
 
@@ -178,6 +257,11 @@ func (h *ActivityHandler) GetDetailedReport(c *gin.Context) {
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
+	}
+
+	// Garante que sempre retorna um array, mesmo que vazio
+	if report == nil {
+		report = []repository.FindDetailedActivityReportRow{}
 	}
 
 	rest.Send(c.Writer, report, http.StatusOK)
@@ -201,6 +285,11 @@ func (h *ActivityHandler) GetGapAnalysis(c *gin.Context) {
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
+	}
+
+	// Garante que sempre retorna um array, mesmo que vazio
+	if gapAnalysis == nil {
+		gapAnalysis = []GapAnalysisResponse{}
 	}
 
 	rest.Send(c.Writer, gapAnalysis, http.StatusOK)
@@ -245,13 +334,15 @@ func (h *ActivityHandler) DownloadReportPDF(c *gin.Context) {
 		return
 	}
 
-	activities, err := h.queries.GetDetailedReport(c.Request.Context(), userID)
+	// Buscar dados completos do relatório (atividades + informações do usuário)
+	reportData, err := h.queries.GetDetailedReportData(c.Request.Context(), userID)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	pdfBuffer, err := GenerateDossierPDF(activities)
+	// Gerar PDF com dados completos
+	pdfBuffer, err := GenerateDetailedDossierPDF(reportData)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
@@ -262,6 +353,66 @@ func (h *ActivityHandler) DownloadReportPDF(c *gin.Context) {
 	c.Header("Content-Length", fmt.Sprintf("%d", pdfBuffer.Len()))
 
 	c.Writer.Write(pdfBuffer.Bytes())
+}
+
+func (h *ActivityHandler) SendReportToManager(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	// Fetch user information including manager
+	user, err := h.queries.repo.FindUserByID(c.Request.Context(), userID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	// Check if user has a registered manager
+	if !user.ManagerEmail.Valid || user.ManagerEmail.String == "" {
+		rest.Error(c.Writer, http.StatusBadRequest, "Engineering manager not registered",
+			"Please register your manager's email in your profile settings before sending the report.")
+		return
+	}
+
+	// Fetch complete report data
+	reportData, err := h.queries.GetDetailedReportData(c.Request.Context(), userID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	// Gerar PDF
+	pdfBuffer, err := GenerateDetailedDossierPDF(reportData)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	// Send email to manager
+	managerName := "Manager"
+	if user.ManagerName.Valid && user.ManagerName.String != "" {
+		managerName = user.ManagerName.String
+	}
+
+	err = h.emailService.SendReportToManager(
+		managerName,
+		user.ManagerEmail.String,
+		user.Username,
+		user.Email,
+		pdfBuffer.Bytes(),
+	)
+
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, "Error sending email", err)
+		return
+	}
+
+	rest.Send(c.Writer, map[string]string{
+		"message": "Report successfully sent to " + user.ManagerEmail.String,
+		"status":  "success",
+	}, http.StatusOK)
 }
 
 func getErrorMessage(fe validator.FieldError) string {

@@ -17,10 +17,26 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
+        // Verifica se há token antes de fazer a requisição
+        const token = localStorage.getItem("career_token");
+        if (!token) {
+          console.error("Token não encontrado no localStorage");
+          setError("Você não está autenticado. Faça login novamente.");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Buscando dashboard com token:", token.substring(0, 20) + "...");
         const response = await api.get("/dashboard");
+        console.log("Dashboard carregado com sucesso:", response);
         setData(response);
       } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
+        console.error("Erro ao carregar dashboard:", err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Erro desconhecido ao carregar dashboard");
+        }
       } finally {
         setLoading(false);
       }
@@ -79,14 +95,15 @@ export default function DashboardPage() {
       <main className="flex-1 ml-64 p-8">
         <PageHeader 
           title="Dashboard" 
-          subtitle={`Nível Atual: ${data.current_level}`}
+          subtitle={`Nível: ${data.official_level} → ${data.target_level}`}
         />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Nível Atual"
-            value={data.current_level}
+            value={data.official_level}
+            subtitle={`Meta: ${data.target_level}`}
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />

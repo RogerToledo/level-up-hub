@@ -5,6 +5,10 @@ export interface User {
   username: string;
   email: string;
   active: boolean;
+  role: string;
+  current_level?: string;
+  manager_name?: string;
+  manager_email?: string;
 }
 
 export interface LoginRequest {
@@ -25,10 +29,9 @@ export interface RegisterRequest {
 }
 
 export enum Pillar {
-  COMMUNICATION = "COMMUNICATION",
-  TEAMWORK = "TEAMWORK",
   TECHNICAL = "TECHNICAL",
-  LEADERSHIP = "LEADERSHIP",
+  RESULTS = "RESULTS",
+  INFLUENCE = "INFLUENCE",
 }
 
 export interface CreateActivityRequest {
@@ -62,7 +65,9 @@ export interface PillarStats {
 }
 
 export interface DashboardResponse {
-  current_level: string;
+  official_level: string;
+  target_level: string;
+  current_level?: string; // Mantido para retrocompatibilidade
   pdi_progress: Record<string, PillarStats>;
   max_pdi_xp: number;
   total_achieved: number;

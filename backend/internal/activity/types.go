@@ -1,5 +1,7 @@
 package activity
 
+import "github.com/me/level-up-hub/backend/internal/repository"
+
 type PillarStats struct {
 	Achieved   int32   `json:"achieved"`
 	Planned    int32   `json:"planned"`
@@ -7,9 +9,10 @@ type PillarStats struct {
 }
 
 type DashboardResponse struct {
-    CurrentLevel   string                 `json:"current_level"`
-    PdiProgress    map[string]PillarStats `json:"pdi_progress"`
-    MaxPdiXp       int32                  `json:"max_pdi_xp"`
-    TotalAchieved  int32                  `json:"total_achieved"`
-    Overdelivery   map[string]int32       `json:"overdelivery"`
+	OfficialLevel repository.LadderLevel `json:"official_level"`
+	TargetLevel   repository.LadderLevel `json:"target_level"`
+	TotalAchieved int32                  `json:"total_achieved"`
+	MaxPdiXp      int32                  `json:"max_pdi_xp"`
+	PdiProgress   map[string]PillarStats `json:"pdi_progress"`
+	Overdelivery  map[string]int32       `json:"overdelivery"`
 }

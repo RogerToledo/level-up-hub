@@ -1,13 +1,13 @@
--- Script de Análise de Performance de Índices
--- Execute este script no psql ou DBeaver para verificar o estado dos índices
+-- Index Performance Analysis Script
+-- Execute this script in psql or DBeaver to check index status
 
 \echo '========================================='
-\echo 'ANÁLISE DE PERFORMANCE - ÍNDICES'
+\echo 'PERFORMANCE ANALYSIS - INDEXES'
 \echo '========================================='
 \echo ''
 
--- 1. ÍNDICES MAIS UTILIZADOS
-\echo '1. ÍNDICES MAIS UTILIZADOS (Top 10)'
+-- 1. MOST USED INDEXES
+\echo '1. MOST USED INDEXES (Top 10)'
 \echo '-----------------------------------'
 SELECT 
     schemaname,
@@ -21,7 +21,7 @@ ORDER BY idx_scan DESC
 LIMIT 10;
 
 \echo ''
-\echo '2. ÍNDICES NÃO UTILIZADOS'
+\echo '2. UNUSED INDEXES'
 \echo '-------------------------'
 SELECT 
     schemaname,
@@ -37,7 +37,7 @@ WHERE schemaname = 'public'
 ORDER BY pg_relation_size(indexrelid) DESC;
 
 \echo ''
-\echo '3. TAMANHO DAS TABELAS E ÍNDICES'
+\echo '3. TABLE AND INDEX SIZES'
 \echo '--------------------------------'
 SELECT 
     tablename,

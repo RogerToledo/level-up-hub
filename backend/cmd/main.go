@@ -15,6 +15,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/account"
 	"github.com/me/level-up-hub/backend/internal/activity"
 	"github.com/me/level-up-hub/backend/internal/database"
+	"github.com/me/level-up-hub/backend/internal/email"
 	"github.com/me/level-up-hub/backend/internal/ladder"
 	"github.com/me/level-up-hub/backend/internal/logger"
 	"github.com/me/level-up-hub/backend/internal/repository"
@@ -23,7 +24,7 @@ import (
 
 // @title           Level Up Hub API
 // @version         1.0
-// @description     API para gerenciamento de carreira e desenvolvimento profissional com sistema de XP, atividades e relatórios.
+// @description     API for career management and professional development with XP system, activities and reports.
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   API Support
@@ -74,7 +75,8 @@ func main() {
 	ladderService := ladder.NewService(repo)
 	ladderHandler := ladder.NewHandler(ladderService, cfg)
 	activityService := activity.NewService(repo, dbPool)
-	activityHandler := activity.NewHandler(activityService, cfg)
+	emailService := email.NewService(cfg)
+	activityHandler := activity.NewHandler(activityService, cfg, emailService)
 
 	r := routes.NewRouter(routes.RouterConfig{
 		UserHandler:     handler,

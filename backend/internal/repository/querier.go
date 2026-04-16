@@ -45,6 +45,7 @@ type Querier interface {
 	ListUserActivitiesPaginated(ctx context.Context, arg ListUserActivitiesPaginatedParams) ([]ListUserActivitiesPaginatedRow, error)
 	ListUserActivitiesWithEvidences(ctx context.Context, userID uuid.UUID) ([]ListUserActivitiesWithEvidencesRow, error)
 	ListUserActivitiesWithEvidencesPaginated(ctx context.Context, arg ListUserActivitiesWithEvidencesPaginatedParams) ([]ListUserActivitiesWithEvidencesPaginatedRow, error)
+	UpdateActivity(ctx context.Context, arg UpdateActivityParams) (Activity, error)
 	UpdateActivityProgress(ctx context.Context, arg UpdateActivityProgressParams) (Activity, error)
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

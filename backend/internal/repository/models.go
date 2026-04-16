@@ -195,10 +195,13 @@ type User struct {
 	Password     string      `json:"password"`
 	Active       bool        `json:"active"`
 	Role         UserRole    `json:"role"`
+	CurrentLevel LadderLevel `json:"current_level"`
 	CreatedAt    pgtype.Date `json:"created_at"`
 	UpdatedAt    pgtype.Date `json:"updated_at"`
-	CurrentLevel int32       `json:"current_level"`
-	TotalXp      int32       `json:"total_xp"`
+	// Name of the user's engineering manager
+	ManagerName pgtype.Text `json:"manager_name"`
+	// Email address of the engineering manager for report distribution
+	ManagerEmail pgtype.Text `json:"manager_email"`
 }
 
 type XpTarget struct {

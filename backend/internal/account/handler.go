@@ -11,6 +11,7 @@ import (
 	"github.com/me/level-up-hub/backend/config"
 	"github.com/me/level-up-hub/backend/internal/pagination"
 	"github.com/me/level-up-hub/backend/internal/pkg/identity"
+	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/me/level-up-hub/backend/internal/rest"
 )
 
@@ -43,7 +44,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.Login(c.Request.Context(), req, h.config.JWTSecret)
+	loginResponse, err := h.service.Login(c.Request.Context(), req, h.config.JWTSecret)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrInvalidCredentials, nil)
 		return
@@ -53,7 +54,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	rest.Send(c.Writer, gin.H{"token": token}, http.StatusOK)
+	rest.Send(c.Writer, loginResponse, http.StatusOK)
 }
 
 // Register godoc
@@ -89,12 +90,12 @@ func (h *Handler) Register(c *gin.Context) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        user  body      CreateUserRequest  true  "User data"
+// @Param        user  body      UpdateUserRequest  true  "User data"
 // @Success      200   {object}  map[string]interface{}  "User updated successfully"
 // @Failure      400   {object}  map[string]interface{}  "Invalid data"
 // @Router       /users [put]
 func (h *Handler) Update(c *gin.Context) {
-	var req CreateUserRequest
+	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
@@ -194,6 +195,11 @@ func (h *Handler) FindAll(c *gin.Context) {
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err.Error())
 		return
+	}
+
+	// Garante que sempre retorna um array, mesmo que vazio
+	if users == nil {
+		users = []repository.FindAllUsersPaginatedRow{}
 	}
 
 	// Count total users

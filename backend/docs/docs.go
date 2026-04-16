@@ -301,7 +301,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/v1",
 	Schemes:          []string{},
 	Title:            "Level Up Hub API",
-	Description:      "API para gerenciamento de carreira e desenvolvimento profissional com sistema de XP, atividades e relatórios.",
+	Description:      "API for career management and professional development with XP system, activities and reports.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

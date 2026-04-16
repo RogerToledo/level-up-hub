@@ -42,6 +42,39 @@ func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityPara
 	return params
 }
 
+type UpdateActivityDTO struct {
+	Title              string  `json:"title" binding:"required"`
+	Description        *string `json:"description"`
+	ProgressPercentage int32   `json:"progress_percentage" binding:"required,min=0,max=100"`
+	ImpactSummary      *string `json:"impact_summary"`
+	IsPdiTarget        bool    `json:"is_pdi_target"`
+}
+
+func (dto *UpdateActivityDTO) ToRepositoryParams(activityID uuid.UUID, userID uuid.UUID) repository.UpdateActivityParams {
+	params := repository.UpdateActivityParams{
+		ID:                 activityID,
+		UserID:             userID,
+		Title:              dto.Title,
+		ProgressPercentage: dto.ProgressPercentage,
+		IsPdiTarget:        dto.IsPdiTarget,
+	}
+
+	// Converte ponteiros de string para pgtype.Text
+	if dto.Description != nil {
+		params.Description = pgtype.Text{String: *dto.Description, Valid: true}
+	} else {
+		params.Description = pgtype.Text{Valid: false}
+	}
+
+	if dto.ImpactSummary != nil {
+		params.ImpactSummary = pgtype.Text{String: *dto.ImpactSummary, Valid: true}
+	} else {
+		params.ImpactSummary = pgtype.Text{Valid: false}
+	}
+
+	return params
+}
+
 type GapAnalysisResponse struct {
 	Pillar     string `json:"pillar"`
 	Target     int32  `json:"target"`
@@ -77,7 +110,7 @@ type LevelComparison struct {
 	LevelName string `json:"level_name"`
 	CurrentXP int32  `json:"current_xp"`
 	PrevXP    int32  `json:"prev_xp"`
-	Diff      int32  `json:"diff"`      // If positive, you accelerated. If negative, you decelerated.
+	Diff      int32  `json:"diff"` // If positive, you accelerated. If negative, you decelerated.
 }
 
 type ComparisonReport struct {

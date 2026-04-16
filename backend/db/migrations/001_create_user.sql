@@ -9,6 +9,7 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     active BOOLEAN NOT NULL DEFAULT true,
     role user_role NOT NULL DEFAULT 'user',
+    current_level public.ladder_level NOT NULL DEFAULT 'P1'::ladder_level,
     created_at DATE NOT NULL DEFAULT NOW(),
     updated_at DATE NOT NULL DEFAULT NOW()
 );

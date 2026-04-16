@@ -1,18 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-interface SidebarProps {
-  userName?: string;
-}
-
-export default function Sidebar({ userName }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    setUserName(localStorage.getItem("user_name") || "");
+    setUserRole(localStorage.getItem("user_role") || "");
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("career_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_role");
     router.push("/login");
   };
 
@@ -44,7 +51,32 @@ export default function Sidebar({ userName }: SidebarProps) {
         </svg>
       ),
     },
+    {
+      name: "Perfil",
+      href: "/profile",
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
   ];
+
+  // Menu item apenas para administradores
+  const adminMenuItems = [
+    {
+      name: "Usuários",
+      href: "/users",
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+    },
+  ];
+
+  // Combina os menus baseado no role
+  const allMenuItems = userRole === "admin" ? [...menuItems, ...adminMenuItems] : menuItems;
 
   return (
     <aside className="fixed top-0 left-0 z-40 w-64 h-screen bg-gray-900 border-r border-gray-800">
@@ -57,7 +89,7 @@ export default function Sidebar({ userName }: SidebarProps) {
 
         {/* Menu Items */}
         <nav className="flex-1 space-y-2">
-          {menuItems.map((item) => {
+          {allMenuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
