@@ -16,7 +16,7 @@ CREATE INDEX idx_activities_pdi ON activities(user_id, is_pdi_target);
 
 CREATE TABLE activity_pillars (
     activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-    pillar ladder_pillar NOT NULL,
+    pillar pillar NOT NULL,
     PRIMARY KEY (activity_id, pillar)
 );
 

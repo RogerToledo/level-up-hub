@@ -83,6 +83,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected := v1.Group("/")
 	protected.Use(api.AuthMiddleware(appCfg.JWTSecret))
 	protected.GET("/users/:id", cfg.UserHandler.FindByID)
+	protected.PUT("/users/:id", cfg.UserHandler.UpdateOwnProfile) // Users can update their own profile
 
 	protected.POST("/activities", cfg.ActivityHandler.Create)
 	protected.GET("/activities", cfg.ActivityHandler.List)
@@ -107,7 +108,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.DELETE("/users/:id", cfg.UserHandler.Delete)
 	admin.GET("/users", cfg.UserHandler.FindAll)
 	admin.POST("/users", cfg.UserHandler.Register)
-	admin.PUT("/users/:id", cfg.UserHandler.Update)
+	admin.PATCH("/users/:id", cfg.UserHandler.Update) // Admin can update any user
 
 	admin.POST("/ladder", cfg.LadderHandler.Create)
 

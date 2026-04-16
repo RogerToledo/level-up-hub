@@ -31,6 +31,7 @@ type Querier interface {
 	FindCurrentTargetLevel(ctx context.Context, year int32) (FindCurrentTargetLevelRow, error)
 	FindDetailedActivityReport(ctx context.Context, userID uuid.UUID) ([]FindDetailedActivityReportRow, error)
 	FindEvidencesByActivity(ctx context.Context, activityID uuid.UUID) ([]ActivityEvidence, error)
+	// Gap analysis based on PDI activities (is_pdi_target = true) vs completed activities
 	FindGapAnalysis(ctx context.Context, arg FindGapAnalysisParams) ([]FindGapAnalysisRow, error)
 	FindLadderByLevel(ctx context.Context, level LadderLevel) (CareerLadder, error)
 	FindLadderLevel(ctx context.Context, id uuid.UUID) (CareerLadder, error)

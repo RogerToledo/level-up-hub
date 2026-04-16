@@ -76,6 +76,7 @@ func (dto *UpdateActivityDTO) ToRepositoryParams(activityID uuid.UUID, userID uu
 }
 
 type GapAnalysisResponse struct {
+	Level      string `json:"level"`
 	Pillar     string `json:"pillar"`
 	Target     int32  `json:"target"`
 	Achieved   int32  `json:"achieved"`

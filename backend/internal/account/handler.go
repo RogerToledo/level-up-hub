@@ -120,6 +120,47 @@ func (h *Handler) Update(c *gin.Context) {
 	rest.Send(c.Writer, fmt.Sprintf(apperr.OkUpdate, apperr.UserPT), http.StatusOK)
 }
 
+// UpdateOwnProfile allows users to update their own profile
+func (h *Handler) UpdateOwnProfile(c *gin.Context) {
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	// Get ID from URL parameter
+	profileID, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	// Get authenticated user ID from context
+	authenticatedUserID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	// Validate that user is updating their own profile
+	if profileID != authenticatedUserID {
+		rest.Error(c.Writer, http.StatusForbidden, "You can only update your own profile", nil)
+		return
+	}
+
+	err = h.service.UpdateUser(c.Request.Context(), profileID, req)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		rest.Error(c.Writer, http.StatusNotFound, fmt.Sprintf(apperr.ErrIsNotFound, apperr.UserPT), nil)
+		return
+	}
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err.Error())
+		return
+	}
+
+	rest.Send(c.Writer, fmt.Sprintf(apperr.OkUpdate, apperr.UserPT), http.StatusOK)
+}
+
 func (h *Handler) Delete(c *gin.Context) {
 	id, err := identity.ValidateIDParam(c)
 	if err != nil {

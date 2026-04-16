@@ -46,10 +46,22 @@ func LoggerMiddleware() gin.HandlerFunc {
 			logLevel = slog.LevelWarn
 		}
 
-		requestLogger.Log(c.Request.Context(), logLevel, "request completed",
+		// Capture errors from context
+		logAttrs := []any{
 			slog.Int("status", status),
 			slog.Duration("latency", latency),
 			slog.Int("response_size", c.Writer.Size()),
-		)
+		}
+
+		// Add error details if present
+		if len(c.Errors) > 0 {
+			errors := make([]string, len(c.Errors))
+			for i, err := range c.Errors {
+				errors[i] = err.Error()
+			}
+			logAttrs = append(logAttrs, slog.Any("errors", errors))
+		}
+
+		requestLogger.Log(c.Request.Context(), logLevel, "request completed", logAttrs...)
 	}
 }

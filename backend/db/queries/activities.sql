@@ -221,21 +221,29 @@ WHERE a.user_id = $1
 ORDER BY a.progress_percentage DESC, a.created_at DESC;
 
 -- name: FindGapAnalysis :many
+-- Gap analysis based on PDI activities (is_pdi_target = true) vs completed activities
 SELECT 
     cl.level,
     ap.pillar::text as pillar,
-    xt.target as target_xp,
+    SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as target_xp,
     SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as achieved_xp,
-    (xt.target - SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END))::int as gap_xp,
-    ROUND(
-        (SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::float / xt.target::float) * 100
-    )::int as completion_percentage
-FROM xp_target xt
-JOIN career_ladder cl ON xt.ladder_id = cl.id
-LEFT JOIN activities a ON a.ladder_id = cl.id AND a.user_id = $1
-LEFT JOIN activity_pillars ap ON a.id = ap.activity_id
-WHERE xt.year = $2 AND ap.pillar IS NOT NULL
-GROUP BY cl.level, ap.pillar, xt.target
+    (SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) - 
+     SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END))::int as gap_xp,
+    CASE 
+        WHEN SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) = 0 THEN 0
+        ELSE ROUND(
+            (SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::float / 
+             SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::float) * 100
+        )::int
+    END as completion_percentage
+FROM activities a
+JOIN career_ladder cl ON a.ladder_id = cl.id
+JOIN activity_pillars ap ON a.id = ap.activity_id
+WHERE a.user_id = $1 
+  AND EXTRACT(YEAR FROM a.created_at)::int = $2::int
+  AND a.is_pdi_target = true
+GROUP BY cl.level, ap.pillar
+HAVING SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) > 0
 ORDER BY cl.level, ap.pillar;
 
 -- name: FindActivityComposition :many

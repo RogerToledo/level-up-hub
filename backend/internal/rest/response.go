@@ -42,6 +42,21 @@ func Error(w http.ResponseWriter, statusCode int, errMessage string, details any
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+	// Log error details for server errors (5xx)
+	if statusCode >= 500 {
+		slog.Error("server error",
+			slog.Int("status", statusCode),
+			slog.String("error", errMessage),
+			slog.Any("details", details),
+		)
+	} else if statusCode >= 400 {
+		slog.Warn("client error",
+			slog.Int("status", statusCode),
+			slog.String("error", errMessage),
+			slog.Any("details", details),
+		)
+	}
+
 	w.WriteHeader(statusCode)
 
 	resp := ErrorResponse{

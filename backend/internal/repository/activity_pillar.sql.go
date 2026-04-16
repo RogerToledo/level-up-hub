@@ -19,8 +19,8 @@ RETURNING activity_id, pillar
 `
 
 type CreateActivityPillarParams struct {
-	ActivityID uuid.UUID   `json:"activity_id"`
-	Pillar     interface{} `json:"pillar"`
+	ActivityID uuid.UUID `json:"activity_id"`
+	Pillar     Pillar    `json:"pillar"`
 }
 
 func (q *Queries) CreateActivityPillar(ctx context.Context, arg CreateActivityPillarParams) (ActivityPillar, error) {

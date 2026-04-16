@@ -1,3 +1,6 @@
+CREATE TYPE ladder_level AS ENUM ('P1', 'P2', 'P3', 'LT1', 'LT2', 'LT3', 'LT4');
+CREATE TYPE pillar AS ENUM ('TECHNICAL', 'RESULTS', 'INFLUENCE');
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE user_role AS ENUM ('user', 'admin');

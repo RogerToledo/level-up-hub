@@ -167,8 +167,8 @@ type ActivityEvidence struct {
 }
 
 type ActivityPillar struct {
-	ActivityID uuid.UUID   `json:"activity_id"`
-	Pillar     interface{} `json:"pillar"`
+	ActivityID uuid.UUID `json:"activity_id"`
+	Pillar     Pillar    `json:"pillar"`
 }
 
 type CareerLadder struct {

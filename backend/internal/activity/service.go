@@ -185,7 +185,9 @@ func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*Da
 			Planned:    row.TotalPdiPlanned,
 			Percentage: percentage,
 		}
-		resp.Overdelivery[row.Pillar] = row.OverdeliveryXp
+		// Group overdelivery by level instead of pillar
+		levelKey := string(row.Level)
+		resp.Overdelivery[levelKey] += row.OverdeliveryXp
 	}
 
 	resp.TargetLevel = highestTarget
@@ -236,8 +238,8 @@ func (s *Service) GetDetailedReportData(ctx context.Context, userID uuid.UUID) (
 
 func (s *Service) GetGapAnalysis(ctx context.Context, userID uuid.UUID, year int) ([]GapAnalysisResponse, error) {
 	rows, err := s.repo.FindGapAnalysis(ctx, repository.FindGapAnalysisParams{
-		UserID: userID,
-		Year:   int32(year),
+		UserID:  userID,
+		Column2: int32(year),
 	})
 	if err != nil {
 		return nil, err
@@ -253,6 +255,7 @@ func (s *Service) GetGapAnalysis(ctx context.Context, userID uuid.UUID, year int
 		}
 
 		analysis = append(analysis, GapAnalysisResponse{
+			Level:      string(row.Level),
 			Pillar:     row.Pillar,
 			Target:     row.TargetXp,
 			Achieved:   row.AchievedXp,
