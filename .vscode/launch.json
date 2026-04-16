@@ -12,7 +12,8 @@
             "program": "${workspaceFolder}/backend/cmd/main.go",   
             "cwd": "${workspaceFolder}",
             "env": {
-                "GOROOT": ""
+                "GOROOT": "",
+                "ENV": "prod"
             }
         }
     ]
