@@ -101,13 +101,19 @@ export default function ProfilePage() {
       
       // Atualizar dados no localStorage
       if (typeof window !== "undefined") {
-        const userStr = localStorage.getItem("career_user");
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          user.username = formData.username;
-          user.email = formData.email;
-          localStorage.setItem("career_user", JSON.stringify(user));
+        // Update username in localStorage
+        if (formData.username) {
+          localStorage.setItem("user_name", formData.username);
         }
+        
+        // Fetch updated user data to get the latest role
+        const userData = await api.get(`/users/${userId}`);
+        if (userData.role) {
+          localStorage.setItem("user_role", userData.role);
+        }
+
+        // Dispatch event to update sidebar immediately
+        window.dispatchEvent(new Event("profileUpdated"));
       }
 
       // Limpar mensagem de sucesso após 3 segundos

@@ -337,13 +337,20 @@ export default function ReportsPage() {
               <div className="space-y-4">{gapData.map((gap, index) => (
                   <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white capitalize">{gap.pillar.toLowerCase()}</h3>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">
+                          <span className="text-blue-400">{gap.level}</span>
+                          <span className="text-gray-500 mx-2">•</span>
+                          <span className="capitalize">{gap.pillar.toLowerCase()}</span>
+                        </h3>
+                        <p className="text-sm text-gray-400 mt-1">Meta de XP para este nível e pilar</p>
+                      </div>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        gap.status === "on_track" ? "bg-green-900 text-green-300" :
-                        gap.status === "at_risk" ? "bg-yellow-900 text-yellow-300" :
+                        gap.status === "DONE" ? "bg-green-900 text-green-300" :
+                        gap.status === "IN_PROGRESS" ? "bg-yellow-900 text-yellow-300" :
                         "bg-red-900 text-red-300"
                       }`}>
-                        {gap.status === "on_track" ? "No Caminho" : gap.status === "at_risk" ? "Em Risco" : "Crítico"}
+                        {gap.status === "DONE" ? "Completo" : gap.status === "IN_PROGRESS" ? "Em Progresso" : "Crítico"}
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-4 mb-4">

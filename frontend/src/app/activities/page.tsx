@@ -101,10 +101,23 @@ export default function ActivitiesPage() {
 
   const fetchLadders = async () => {
     try {
-      const data = await api.get("/ladders");
-      setLadders(data);
+      const response = await api.get("/ladders");
+      console.log("Ladders response:", response);
+      
+      // A resposta vem no formato: {message: [...]}
+      if (Array.isArray(response)) {
+        setLadders(response);
+      } else if (response.items && Array.isArray(response.items)) {
+        setLadders(response.items);
+      } else if (response.data && Array.isArray(response.data)) {
+        setLadders(response.data);
+      } else {
+        console.warn("Formato de resposta inesperado para ladders, usando array vazio");
+        setLadders([]);
+      }
     } catch (error) {
       console.error("Erro ao carregar níveis:", error);
+      setLadders([]);
     }
   };
 

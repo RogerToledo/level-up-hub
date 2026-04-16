@@ -75,6 +75,7 @@ export interface DashboardResponse {
 }
 
 export interface GapAnalysisResponse {
+  level: string;
   pillar: string;
   target: number;
   achieved: number;

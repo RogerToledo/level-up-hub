@@ -13,6 +13,22 @@ export default function Sidebar() {
   useEffect(() => {
     setUserName(localStorage.getItem("user_name") || "");
     setUserRole(localStorage.getItem("user_role") || "");
+
+    // Listen for storage changes (when profile is updated)
+    const handleStorageChange = () => {
+      setUserName(localStorage.getItem("user_name") || "");
+      setUserRole(localStorage.getItem("user_role") || "");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Also listen for custom event when updating in the same tab
+    window.addEventListener("profileUpdated", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("profileUpdated", handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
