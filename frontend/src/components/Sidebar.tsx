@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { api } from "@/services/api";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -31,11 +32,8 @@ export default function Sidebar() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("career_token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("user_role");
+  const handleLogout = async () => {
+    await api.logout();
     router.push("/login");
   };
 

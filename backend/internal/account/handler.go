@@ -57,6 +57,18 @@ func (h *Handler) Login(c *gin.Context) {
 	rest.Send(c.Writer, loginResponse, http.StatusOK)
 }
 
+// Logout godoc
+// @Summary      User logout
+// @Description  Invalidates the current session (client must discard the token)
+// @Tags         auth
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "Logout successful"
+// @Router       /logout [post]
+func (h *Handler) Logout(c *gin.Context) {
+	rest.Send(c.Writer, apperr.Ok, http.StatusOK)
+}
+
 // Register godoc
 // @Summary      Register new user
 // @Description  Create a new user account

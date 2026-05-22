@@ -82,6 +82,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	// Protected routes
 	protected := v1.Group("/")
 	protected.Use(api.AuthMiddleware(appCfg.JWTSecret))
+	protected.POST("/logout", cfg.UserHandler.Logout)
 	protected.GET("/users/:id", cfg.UserHandler.FindByID)
 	protected.PUT("/users/:id", cfg.UserHandler.UpdateOwnProfile) // Users can update their own profile
 
