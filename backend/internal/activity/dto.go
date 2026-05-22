@@ -12,7 +12,7 @@ type CreateActivityDTO struct {
 	Pillars            []repository.Pillar `json:"pillars" binding:"required"`
 	Title              string              `json:"title" binding:"required"`
 	Description        *string             `json:"description"`
-	ProgressPercentage int32               `json:"progress_percentage" binding:"required,min=0,max=100"`
+	ProgressPercentage int32               `json:"progress_percentage" binding:"gte=0,lte=100"`
 	ImpactSummary      *string             `json:"impact_summary"`
 	IsPdiTarget        bool                `json:"is_pdi_target"`
 }
@@ -45,7 +45,7 @@ func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityPara
 type UpdateActivityDTO struct {
 	Title              string  `json:"title" binding:"required"`
 	Description        *string `json:"description"`
-	ProgressPercentage int32   `json:"progress_percentage" binding:"required,min=0,max=100"`
+	ProgressPercentage int32   `json:"progress_percentage" binding:"gte=0,lte=100"`
 	ImpactSummary      *string `json:"impact_summary"`
 	IsPdiTarget        bool    `json:"is_pdi_target"`
 }

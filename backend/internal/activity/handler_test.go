@@ -37,6 +37,30 @@ func TestCreateActivityDTO_Validation(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "valid activity with 0% progress",
+			dto: CreateActivityDTO{
+				UserID:             uuid.New(),
+				LadderID:           uuid.New(),
+				Pillars:            []repository.Pillar{repository.PillarTECHNICAL},
+				Title:              "Test Activity",
+				ProgressPercentage: 0,
+				IsPdiTarget:        true,
+			},
+			expectError: false,
+		},
+		{
+			name: "valid activity with 100% progress",
+			dto: CreateActivityDTO{
+				UserID:             uuid.New(),
+				LadderID:           uuid.New(),
+				Pillars:            []repository.Pillar{repository.PillarTECHNICAL},
+				Title:              "Test Activity",
+				ProgressPercentage: 100,
+				IsPdiTarget:        true,
+			},
+			expectError: false,
+		},
+		{
 			name: "invalid progress percentage - too high",
 			dto: CreateActivityDTO{
 				UserID:             uuid.New(),
