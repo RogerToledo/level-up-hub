@@ -3,7 +3,7 @@ APP_NAME=level-up-hub-api
 DOCKER_COMPOSE=docker-compose.yml
 BINARY_NAME=api
 
-.PHONY: help build run test migrate-up docker-up clean swagger dev install-tools fmt lint check sqlc stop test-shutdown test-all test-coverage test-bench test-quick test-race
+.PHONY: help build run run-front test migrate-up docker-up clean swagger dev install-tools fmt lint check sqlc stop test-shutdown test-all test-coverage test-bench test-quick test-race
 
 # Default command when typing just 'make'
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "📦 Build & Run:"
 	@echo "  make build         - Compila o binário da aplicação"
 	@echo "  make run           - Executa a aplicação localmente"
+	@echo "  make run-front     - Executa o frontend (Next.js dev)"
 	@echo "  make dev           - Roda em modo desenvolvimento (hot-reload)"
 	@echo "  make stop          - Para a aplicação gracefully (SIGTERM)"
 	@echo ""
@@ -58,6 +59,10 @@ build:
 run:
 	@echo "🚀 Iniciando aplicação..."
 	@cd backend && go run cmd/main.go
+
+run-front:
+	@echo "🚀 Iniciando frontend..."
+	@cd frontend && npm run dev
 
 dev:
 	@echo "🔧 Iniciando em modo desenvolvimento..."
