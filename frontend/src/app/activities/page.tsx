@@ -44,8 +44,12 @@ export default function ActivitiesPage() {
   const [ladders, setLadders] = useState<Ladder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+  const [viewEvidences, setViewEvidences] = useState<Evidence[]>([]);
+  const [loadingEvidences, setLoadingEvidences] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [selectedActivityForEvidence, setSelectedActivityForEvidence] = useState<Activity | null>(null);
@@ -131,6 +135,21 @@ export default function ActivitiesPage() {
     } catch (error) {
       console.error("Erro ao deletar:", error);
       alert("Erro ao deletar atividade");
+    }
+  };
+
+  const handleViewClick = async (activity: Activity) => {
+    setViewingActivity(activity);
+    setViewEvidences([]);
+    setShowViewModal(true);
+    setLoadingEvidences(true);
+    try {
+      const evidences = await api.get(`/activities/${activity.id}/evidences`);
+      setViewEvidences(Array.isArray(evidences) ? evidences : []);
+    } catch (error) {
+      console.error("Erro ao carregar evidências:", error);
+    } finally {
+      setLoadingEvidences(false);
     }
   };
 
@@ -380,6 +399,16 @@ export default function ActivitiesPage() {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => handleViewClick(activity)}
+                      className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-700 rounded transition-all"
+                      title="Visualizar Atividade"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
                     <button 
                       onClick={() => handleEvidenceClick(activity)}
                       className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded transition-all"
@@ -446,6 +475,137 @@ export default function ActivitiesPage() {
           </div>
         )}
       </main>
+
+      {/* Modal de Visualização de Atividade */}
+      {showViewModal && viewingActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Detalhes da Atividade</h2>
+                <p className="text-sm text-gray-400 mt-1">{viewingActivity.title}</p>
+              </div>
+              <button
+                onClick={() => { setShowViewModal(false); setViewingActivity(null); }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {viewingActivity.is_pdi_target && (
+                  <span className="px-3 py-1 bg-blue-900 text-blue-300 text-sm font-medium rounded-full">PDI</span>
+                )}
+                {viewingActivity.progress_percentage === 100 && (
+                  <span className="px-3 py-1 bg-green-900 text-green-300 text-sm font-medium rounded-full">✓ Completo</span>
+                )}
+              </div>
+
+              {/* Descrição */}
+              {viewingActivity.description && (
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Descrição</p>
+                  <p className="text-white text-sm bg-gray-700 rounded-lg p-4">{viewingActivity.description}</p>
+                </div>
+              )}
+
+              {/* Resumo do Impacto */}
+              {viewingActivity.impact_summary && (
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Resumo do Impacto</p>
+                  <p className="text-white text-sm bg-gray-700 rounded-lg p-4">{viewingActivity.impact_summary}</p>
+                </div>
+              )}
+
+              {/* Progresso */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-400">Progresso</p>
+                  <span className="text-sm font-bold text-white">{viewingActivity.progress_percentage}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      viewingActivity.progress_percentage === 100
+                        ? 'bg-green-600'
+                        : viewingActivity.progress_percentage >= 50
+                        ? 'bg-blue-600'
+                        : 'bg-yellow-600'
+                    }`}
+                    style={{ width: `${viewingActivity.progress_percentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Data de criação */}
+              <div>
+                <p className="text-sm font-medium text-gray-400 mb-1">Criada em</p>
+                <p className="text-white text-sm">{formatDate(viewingActivity.created_at)}</p>
+              </div>
+
+              {/* Evidências */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Evidências</h3>
+                {loadingEvidences ? (
+                  <div className="text-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400 text-sm">Carregando evidências...</p>
+                  </div>
+                ) : viewEvidences.length > 0 ? (
+                  <div className="space-y-3">
+                    {viewEvidences.map((evidence, index) => (
+                      <div key={evidence.id} className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                        <div className="flex items-start gap-3">
+                          <div className="shrink-0 w-8 h-8 bg-blue-900 text-blue-300 rounded-lg flex items-center justify-center text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={evidence.evidence_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 hover:underline text-sm break-all flex items-center gap-2"
+                            >
+                              {evidence.evidence_url}
+                              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                            {evidence.description && (
+                              <p className="text-gray-400 text-sm mt-2">{evidence.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-700 rounded-lg">
+                    <svg className="w-12 h-12 text-gray-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <p className="text-gray-400 text-sm">Nenhuma evidência cadastrada</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-800 border-t border-gray-700 px-6 py-4">
+              <button
+                onClick={() => { setShowViewModal(false); setViewingActivity(null); }}
+                className="w-full px-6 py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Criação de Atividade */}
       {showModal && (
