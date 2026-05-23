@@ -91,6 +91,26 @@ func (h *ActivityHandler) AddEvidence(c *gin.Context) {
 	rest.Send(c.Writer, evidence, http.StatusCreated)
 }
 
+func (h *ActivityHandler) GetActivityPillars(c *gin.Context) {
+	activityID, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	pillars, err := h.queries.GetActivityPillars(c.Request.Context(), activityID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	if pillars == nil {
+		pillars = []repository.Pillar{}
+	}
+
+	rest.Send(c.Writer, pillars, http.StatusOK)
+}
+
 func (h *ActivityHandler) GetActivityEvidences(c *gin.Context) {
 	activityID, err := identity.ValidateIDParam(c)
 	if err != nil {

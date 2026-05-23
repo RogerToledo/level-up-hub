@@ -15,6 +15,7 @@ interface Activity {
   is_pdi_target: boolean;
   created_at: string;
   evidence_count?: number;
+  ladder_id?: string;
 }
 
 interface Evidence {
@@ -64,6 +65,8 @@ export default function ActivitiesPage() {
     progress_percentage: 0,
     impact_summary: "",
     is_pdi_target: false,
+    ladder_id: "",
+    pillars: [] as string[],
   });
   const [formData, setFormData] = useState<ActivityForm>({
     title: "",
@@ -153,7 +156,7 @@ export default function ActivitiesPage() {
     }
   };
 
-  const handleEditClick = (activity: Activity) => {
+  const handleEditClick = async (activity: Activity) => {
     setEditingActivity(activity);
     setEditFormData({
       title: activity.title,
@@ -161,8 +164,18 @@ export default function ActivitiesPage() {
       progress_percentage: activity.progress_percentage,
       impact_summary: activity.impact_summary || "",
       is_pdi_target: activity.is_pdi_target,
+      ladder_id: activity.ladder_id || "",
+      pillars: [],
     });
     setShowEditModal(true);
+    // Busca os pilares atuais da atividade
+    try {
+      const pillars = await api.get(`/activities/${activity.id}/pillars`);
+      const pillarList = Array.isArray(pillars) ? pillars : [];
+      setEditFormData(prev => ({ ...prev, pillars: pillarList }));
+    } catch (error) {
+      console.error("Erro ao carregar pilares:", error);
+    }
   };
 
   const handleUpdateActivity = async () => {
@@ -181,6 +194,8 @@ export default function ActivitiesPage() {
         progress_percentage: editFormData.progress_percentage,
         impact_summary: editFormData.impact_summary || undefined,
         is_pdi_target: editFormData.is_pdi_target,
+        ladder_id: editFormData.ladder_id || undefined,
+        pillars: editFormData.pillars.length > 0 ? editFormData.pillars : undefined,
       });
 
       // Atualiza a lista de atividades
@@ -795,6 +810,53 @@ export default function ActivitiesPage() {
                 />
               </div>
 
+              {/* Nível/Ladder */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Nível
+                </label>
+                <select
+                  value={editFormData.ladder_id}
+                  onChange={(e) => setEditFormData({ ...editFormData, ladder_id: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione um nível</option>
+                  {ladders.map((ladder) => (
+                    <option key={ladder.id} value={ladder.id}>
+                      {ladder.level} - {ladder.xp_reward} XP
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Pilares */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Pilares
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.values(Pillar).map((pillar) => (
+                    <button
+                      key={pillar}
+                      type="button"
+                      onClick={() => setEditFormData(prev => ({
+                        ...prev,
+                        pillars: prev.pillars.includes(pillar)
+                          ? prev.pillars.filter(p => p !== pillar)
+                          : [...prev.pillars, pillar],
+                      }))}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                        editFormData.pillars.includes(pillar)
+                          ? "bg-blue-600 border-blue-500 text-white"
+                          : "bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500"
+                      }`}
+                    >
+                      {pillar}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Descrição */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -808,8 +870,6 @@ export default function ActivitiesPage() {
                   rows={3}
                 />
               </div>
-
-              {/* Progresso */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Progresso: {editFormData.progress_percentage}%

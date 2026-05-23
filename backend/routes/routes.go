@@ -94,6 +94,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/dashboard", cfg.ActivityHandler.GetDashboard)
 	protected.POST("/activities/:id/evidence", cfg.ActivityHandler.AddEvidence)
 	protected.GET("/activities/:id/evidences", cfg.ActivityHandler.GetActivityEvidences)
+	protected.GET("/activities/:id/pillars", cfg.ActivityHandler.GetActivityPillars)
 	protected.GET("/activities/evidence", cfg.ActivityHandler.GetActivitiesEvidences)
 	protected.GET("/report", cfg.ActivityHandler.GetDetailedReport)
 	protected.GET("/gap-analysis", cfg.ActivityHandler.GetGapAnalysis)

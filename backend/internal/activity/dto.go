@@ -43,11 +43,13 @@ func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityPara
 }
 
 type UpdateActivityDTO struct {
-	Title              string  `json:"title" binding:"required"`
-	Description        *string `json:"description"`
-	ProgressPercentage int32   `json:"progress_percentage" binding:"gte=0,lte=100"`
-	ImpactSummary      *string `json:"impact_summary"`
-	IsPdiTarget        bool    `json:"is_pdi_target"`
+	Title              string              `json:"title" binding:"required"`
+	Description        *string             `json:"description"`
+	ProgressPercentage int32               `json:"progress_percentage" binding:"gte=0,lte=100"`
+	ImpactSummary      *string             `json:"impact_summary"`
+	IsPdiTarget        bool                `json:"is_pdi_target"`
+	LadderID           *uuid.UUID          `json:"ladder_id"`
+	Pillars            []repository.Pillar `json:"pillars"`
 }
 
 func (dto *UpdateActivityDTO) ToRepositoryParams(activityID uuid.UUID, userID uuid.UUID) repository.UpdateActivityParams {

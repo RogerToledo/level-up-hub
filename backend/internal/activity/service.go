@@ -127,9 +127,16 @@ func (s *Service) UpdateProgress(ctx context.Context, activityID uuid.UUID, user
 }
 
 func (s *Service) Update(ctx context.Context, activityID uuid.UUID, userID uuid.UUID, dto UpdateActivityDTO) error {
-	params := dto.ToRepositoryParams(activityID, userID)
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-	_, err := s.repo.UpdateActivity(ctx, params)
+	repoWithTx := s.repo.WithTx(tx)
+
+	params := dto.ToRepositoryParams(activityID, userID)
+	_, err = repoWithTx.UpdateActivity(ctx, params)
 	if err != nil {
 		slog.Error("failed to update activity",
 			slog.String("activity_id", activityID.String()),
@@ -138,7 +145,34 @@ func (s *Service) Update(ctx context.Context, activityID uuid.UUID, userID uuid.
 		return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.ActivityPT), err)
 	}
 
-	return nil
+	// Atualiza ladder_id se fornecido
+	if dto.LadderID != nil {
+		_, err = tx.Exec(ctx,
+			"UPDATE activities SET ladder_id = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+			dto.LadderID, activityID, userID,
+		)
+		if err != nil {
+			return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.ActivityPT), err)
+		}
+	}
+
+	// Sincroniza pilares se fornecidos
+	if len(dto.Pillars) > 0 {
+		if err = repoWithTx.DeleteActivityPillars(ctx, activityID); err != nil {
+			return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.PillarPT), err)
+		}
+		for _, p := range dto.Pillars {
+			_, err = repoWithTx.CreateActivityPillar(ctx, repository.CreateActivityPillarParams{
+				ActivityID: activityID,
+				Pillar:     p,
+			})
+			if err != nil {
+				return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.PillarPT), err)
+			}
+		}
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (s *Service) Delete(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) error {
@@ -200,6 +234,10 @@ func (s *Service) ListActivities(ctx context.Context, userID uuid.UUID) ([]repos
 
 func (s *Service) GetActivitiesEvidence(ctx context.Context, userID uuid.UUID) ([]repository.ListUserActivitiesWithEvidencesRow, error) {
 	return s.repo.ListUserActivitiesWithEvidences(ctx, userID)
+}
+
+func (s *Service) GetActivityPillars(ctx context.Context, activityID uuid.UUID) ([]repository.Pillar, error) {
+	return s.repo.GetActivityPillars(ctx, activityID)
 }
 
 func (s *Service) GetActivityEvidences(ctx context.Context, activityID uuid.UUID) ([]repository.ActivityEvidence, error) {
