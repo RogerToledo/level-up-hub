@@ -10,6 +10,7 @@ interface Activity {
   id: string;
   title: string;
   description?: string;
+  impact_summary?: string;
   progress_percentage: number;
   is_pdi_target: boolean;
   created_at: string;
@@ -139,7 +140,7 @@ export default function ActivitiesPage() {
       title: activity.title,
       description: activity.description || "",
       progress_percentage: activity.progress_percentage,
-      impact_summary: "", // Não temos impact_summary na interface Activity
+      impact_summary: activity.impact_summary || "",
       is_pdi_target: activity.is_pdi_target,
     });
     setShowEditModal(true);
@@ -367,6 +368,12 @@ export default function ActivitiesPage() {
                     </div>
                     {activity.description && (
                       <p className="text-gray-400 text-sm mb-3">{activity.description}</p>
+                    )}
+                    {activity.impact_summary && (
+                      <div className="mb-3 p-3 bg-gray-700 rounded-lg">
+                        <p className="text-xs font-medium text-gray-400 mb-1">Resumo do Impacto</p>
+                        <p className="text-sm text-gray-300">{activity.impact_summary}</p>
+                      </div>
                     )}
                     <p className="text-gray-500 text-xs">
                       Criada em {formatDate(activity.created_at)}
