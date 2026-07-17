@@ -150,6 +150,24 @@ sqlc:
 	@cd backend && sqlc generate
 	@echo "✅ Código sqlc gerado"
 
+migrate-up:
+	@echo "🗄️ Executando migrations..."
+	@if command -v psql >/dev/null 2>&1; then \
+		for f in $$(ls backend/db/migrations/[0-9]*.sql | grep -v '_down.sql' | sort); do \
+			echo "Aplicando $$f via psql..."; \
+			psql "postgres://postgres:postgres@localhost:5432/leveluphub_dev?sslmode=disable" -f $$f || exit 1; \
+		done; \
+	elif docker ps --format '{{.Names}}' | grep -q "^postgis$$"; then \
+		for f in $$(ls backend/db/migrations/[0-9]*.sql | grep -v '_down.sql' | sort); do \
+			echo "Aplicando $$f via Docker (postgis)..."; \
+			docker exec -i postgis psql -U postgres -d leveluphub_dev < $$f || exit 1; \
+		done; \
+	else \
+		echo "❌ Erro: psql não encontrado e container Docker 'postgis' não está rodando."; \
+		exit 1; \
+	fi
+	@echo "✅ Migrations executadas com sucesso!"
+
 docker-up:
 	@echo "🐳 Subindo containers Docker..."
 	docker-compose -f $(DOCKER_COMPOSE) up -d

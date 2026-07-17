@@ -44,7 +44,7 @@ var (
 // It uses sync.Once to ensure configuration is loaded only once.
 func LoadConfig() *Config {
 	onde.Do(func() {
-		err := godotenv.Load()
+		err := godotenv.Load("backend/.env")
 		if err != nil {
 			slog.Warn("no .env file found, using environment variables")
 		}
