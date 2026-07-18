@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/v1",
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:8081";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/v1/:path*`,
+      },
+    ];
   },
 };
 

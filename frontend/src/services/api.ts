@@ -1,10 +1,21 @@
 // frontend/src/services/api.ts
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+function getApiUrl(): string {
+  // Build-time variable takes priority
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
 
-if (!API_URL) {
-  console.error("[API] NEXT_PUBLIC_API_URL is not defined! Requests will fail.");
+  // In production, use rewrites proxy (/api -> backend)
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
+    return "/api";
+  }
+
+  // Local development
+  return "http://localhost:8081/v1";
 }
+
+const API_URL = getApiUrl();
 
 // Função auxiliar para pegar o token do navegador com segurança
 const getHeaders = () => {
