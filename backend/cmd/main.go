@@ -69,6 +69,12 @@ func main() {
 		slog.Int("min_conns", cfg.MinConns),
 	)
 
+	// Run database migrations
+	if migErr := database.RunMigrations(cfg); migErr != nil {
+		log.Error("failed to run migrations", slog.String("error", migErr.Error()))
+		panic(migErr)
+	}
+
 	repo := repository.New(dbPool)
 	service := account.NewService(repo)
 	handler := account.NewHandler(service, cfg)

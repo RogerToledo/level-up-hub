@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS users;
+
+DROP TYPE IF EXISTS user_role;
+DROP TYPE IF EXISTS pillar;
+DROP TYPE IF EXISTS ladder_level;
+
+DROP EXTENSION IF EXISTS "uuid-ossp";

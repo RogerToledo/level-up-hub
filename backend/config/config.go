@@ -27,6 +27,9 @@ type Config struct {
 	JWTSecret      string   `env:"JWT_SECRET" envDefault:"supersecretkey"`
 	AllowedOrigins []string `env:"ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3000"`
 
+	// Migration Settings
+	MigrationsPath string `env:"MIGRATIONS_PATH" envDefault:"backend/db/migrations"`
+
 	// Email/SMTP Settings
 	SMTPHost     string `env:"SMTP_HOST" envDefault:"smtp.gmail.com"`
 	SMTPPort     int    `env:"SMTP_PORT" envDefault:"587"`
