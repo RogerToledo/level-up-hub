@@ -24,7 +24,8 @@ type Config struct {
 	HealthCheckPeriod int `env:"HEALTH_CHECK_PERIOD" envDefault:"60"`  // Period between health checks (seconds)
 	ConnectTimeout    int `env:"CONNECT_TIMEOUT" envDefault:"5"`       // Timeout to connect (seconds)
 
-	JWTSecret string `env:"JWT_SECRET" envDefault:"supersecretkey"`
+	JWTSecret      string   `env:"JWT_SECRET" envDefault:"supersecretkey"`
+	AllowedOrigins []string `env:"ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3000"`
 
 	// Email/SMTP Settings
 	SMTPHost     string `env:"SMTP_HOST" envDefault:"smtp.gmail.com"`

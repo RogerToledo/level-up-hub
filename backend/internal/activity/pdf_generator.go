@@ -23,11 +23,11 @@ type ReportData struct {
 
 // Cores do tema
 var (
-	primaryColor   = color.Color{Red: 25, Green: 118, Blue: 210}   // Azul
-	secondaryColor = color.Color{Red: 67, Green: 160, Blue: 71}    // Verde
-	warningColor   = color.Color{Red: 251, Green: 140, Blue: 0}    // Laranja
-	lightGray      = color.Color{Red: 245, Green: 245, Blue: 245}  // Cinza claro
-	darkGray       = color.Color{Red: 97, Green: 97, Blue: 97}     // Cinza escuro
+	primaryColor   = color.Color{Red: 25, Green: 118, Blue: 210}  // Azul
+	secondaryColor = color.Color{Red: 67, Green: 160, Blue: 71}   // Verde
+	warningColor   = color.Color{Red: 251, Green: 140, Blue: 0}   // Laranja
+	lightGray      = color.Color{Red: 245, Green: 245, Blue: 245} // Cinza claro
+	darkGray       = color.Color{Red: 97, Green: 97, Blue: 97}    // Cinza escuro
 )
 
 // Evidence representa uma evidência extraída do JSON
@@ -308,7 +308,7 @@ func buildExecutiveSummary(m pdf.Maroto, activities []repository.FindDetailedAct
 	})
 
 	pillarCounts := calculatePillarDistribution(activities)
-	
+
 	m.Row(8, func() {
 		m.Col(6, func() {
 			m.Text("Pilar", props.Text{

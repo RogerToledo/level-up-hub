@@ -15,14 +15,14 @@ func SetupTestDB(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
 	cfg := &config.Config{
-		Env:       "test",
-		DbURLDev:  "postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable",
-		MaxConns:  5,
-		MinConns:  1,
-		MaxConnLifetime: 3600,
-		MaxConnIdleTime: 1800,
+		Env:               "test",
+		DbURLDev:          "postgres://postgres:postgres@localhost:5432/leveluphub_test?sslmode=disable",
+		MaxConns:          5,
+		MinConns:          1,
+		MaxConnLifetime:   3600,
+		MaxConnIdleTime:   1800,
 		HealthCheckPeriod: 60,
-		ConnectTimeout: 5,
+		ConnectTimeout:    5,
 	}
 
 	pool, err := database.NewPostgresPool(context.Background(), cfg)
