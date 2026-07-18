@@ -11,12 +11,7 @@ import (
 
 // NewPostgresPool creates and configures a new PostgreSQL connection pool.
 func NewPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
-	var dbURL string
-	if cfg.Env == "prod" {
-		dbURL = cfg.DbURLProd
-	} else {
-		dbURL = cfg.DbURLDev
-	}
+	dbURL := cfg.GetDatabaseURL()
 
 	slog.Info("configuring database connection pool",
 		slog.String("env", cfg.Env),

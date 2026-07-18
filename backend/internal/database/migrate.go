@@ -3,6 +3,9 @@ package database
 import (
 	"errors"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -14,23 +17,34 @@ import (
 // It uses the database URL and migrations path from the config.
 // Returns nil if migrations succeed or if there are no new migrations to apply.
 func RunMigrations(cfg *config.Config) error {
-	var dbURL string
-	if cfg.Env == "prod" {
-		dbURL = cfg.DbURLProd
-	} else {
-		dbURL = cfg.DbURLDev
-	}
+	dbURL := cfg.GetDatabaseURL()
 
 	// golang-migrate pgx5 driver expects "pgx5://" scheme
-	migrateURL := "pgx5" + dbURL[len("postgres"):]
+	// Handle both "postgres://" and "postgresql://" prefixes
+	var migrateURL string
+	switch {
+	case strings.HasPrefix(dbURL, "postgresql://"):
+		migrateURL = "pgx5://" + strings.TrimPrefix(dbURL, "postgresql://")
+	case strings.HasPrefix(dbURL, "postgres://"):
+		migrateURL = "pgx5://" + strings.TrimPrefix(dbURL, "postgres://")
+	default:
+		migrateURL = dbURL
+	}
+
+	// Resolve migrations path to absolute for reliability in containers
+	migrationsPath := cfg.MigrationsPath
+	if !filepath.IsAbs(migrationsPath) {
+		wd, _ := os.Getwd()
+		migrationsPath = filepath.Join(wd, migrationsPath)
+	}
 
 	slog.Info("running database migrations",
-		slog.String("path", cfg.MigrationsPath),
+		slog.String("path", migrationsPath),
 		slog.String("env", cfg.Env),
 	)
 
 	m, err := migrate.New(
-		"file://"+cfg.MigrationsPath,
+		"file://"+migrationsPath,
 		migrateURL,
 	)
 	if err != nil {

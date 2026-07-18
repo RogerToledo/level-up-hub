@@ -11,10 +11,11 @@ import (
 
 // Config holds all application configuration settings loaded from environment variables.
 type Config struct {
-	DbURLDev  string `env:"DB_URL_DEV" envDefault:"postgres://localhost:5432/dev_db"`
-	DbURLProd string `env:"DB_URL_PROD" envDefault:"postgres://localhost:5432/prod_db"`
-	Port      string `env:"PORT" envDefault:"8081"`
-	Env       string `env:"ENV" envDefault:"dev"`
+	DbURLDev    string `env:"DB_URL_DEV" envDefault:"postgres://localhost:5432/dev_db"`
+	DbURLProd   string `env:"DB_URL_PROD" envDefault:"postgres://localhost:5432/prod_db"`
+	DatabaseURL string `env:"DATABASE_URL"` // Railway injects this automatically
+	Port        string `env:"PORT" envDefault:"8081"`
+	Env         string `env:"ENV" envDefault:"dev"`
 
 	// Connection Pool Settings
 	MaxConns          int `env:"MAX_CONNS" envDefault:"25"`            // Maximum connections in pool
@@ -61,4 +62,16 @@ func LoadConfig() *Config {
 
 	})
 	return cfg
+}
+
+// GetDatabaseURL returns the appropriate database URL.
+// Priority: DATABASE_URL (Railway) > DB_URL_PROD (prod) > DB_URL_DEV (dev)
+func (c *Config) GetDatabaseURL() string {
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
+	if c.Env == "prod" {
+		return c.DbURLProd
+	}
+	return c.DbURLDev
 }
