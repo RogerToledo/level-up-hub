@@ -1,14 +1,11 @@
 // frontend/src/services/api.ts
 
-function getApiUrl(): string {
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-      return "/api";
-    }
-  }
-  return "http://localhost:8081/v1";
-}
+const API_URL =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost" &&
+  window.location.hostname !== "127.0.0.1"
+    ? "/api"
+    : "http://localhost:8081/v1";
 
 // Função auxiliar para pegar o token do navegador com segurança
 const getHeaders = () => {
@@ -58,9 +55,8 @@ const handleResponse = async (response: Response) => {
 };
 
 export const api = {
-  // === MÉTODO POST ===
   async post<T>(endpoint: string, body: T) {
-    const response = await fetch(`${getApiUrl()}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -68,18 +64,16 @@ export const api = {
     return handleResponse(response);
   },
 
-  // === MÉTODO GET ===
   async get(endpoint: string) {
-    const response = await fetch(`${getApiUrl()}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       method: "GET",
       headers: getHeaders(),
     });
     return handleResponse(response);
   },
 
-  // === MÉTODO PATCH ===
   async patch<T>(endpoint: string, body: T) {
-    const response = await fetch(`${getApiUrl()}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -87,18 +81,16 @@ export const api = {
     return handleResponse(response);
   },
 
-  // === MÉTODO DELETE ===
   async delete(endpoint: string) {
-    const response = await fetch(`${getApiUrl()}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
     return handleResponse(response);
   },
 
-  // === MÉTODO PUT ===
   async put<T>(endpoint: string, body: T) {
-    const response = await fetch(`${getApiUrl()}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PUT",
       headers: getHeaders(),
       body: JSON.stringify(body),
