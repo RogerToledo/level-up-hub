@@ -1,6 +1,10 @@
 // frontend/src/services/api.ts
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+if (!API_URL) {
+  console.error("[API] NEXT_PUBLIC_API_URL is not defined! Requests will fail.");
+}
 
 // Função auxiliar para pegar o token do navegador com segurança
 const getHeaders = () => {
