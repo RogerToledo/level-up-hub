@@ -1,21 +1,14 @@
 // frontend/src/services/api.ts
 
 function getApiUrl(): string {
-  // Build-time variable takes priority
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+      return "/api";
+    }
   }
-
-  // In production, use rewrites proxy (/api -> backend)
-  if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
-    return "/api";
-  }
-
-  // Local development
   return "http://localhost:8081/v1";
 }
-
-const API_URL = getApiUrl();
 
 // Função auxiliar para pegar o token do navegador com segurança
 const getHeaders = () => {
@@ -67,7 +60,7 @@ const handleResponse = async (response: Response) => {
 export const api = {
   // === MÉTODO POST ===
   async post<T>(endpoint: string, body: T) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -77,7 +70,7 @@ export const api = {
 
   // === MÉTODO GET ===
   async get(endpoint: string) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       method: "GET",
       headers: getHeaders(),
     });
@@ -86,7 +79,7 @@ export const api = {
 
   // === MÉTODO PATCH ===
   async patch<T>(endpoint: string, body: T) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -96,7 +89,7 @@ export const api = {
 
   // === MÉTODO DELETE ===
   async delete(endpoint: string) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
@@ -105,7 +98,7 @@ export const api = {
 
   // === MÉTODO PUT ===
   async put<T>(endpoint: string, body: T) {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       method: "PUT",
       headers: getHeaders(),
       body: JSON.stringify(body),
