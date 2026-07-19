@@ -144,33 +144,6 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 	return string(ns.UserRole), nil
 }
 
-type Activity struct {
-	ID                 uuid.UUID   `json:"id"`
-	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
-	Title              string      `json:"title"`
-	Description        pgtype.Text `json:"description"`
-	IsPdiTarget        bool        `json:"is_pdi_target"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	CompletedAt        pgtype.Date `json:"completed_at"`
-	CreatedAt          pgtype.Date `json:"created_at"`
-	UpdatedAt          pgtype.Date `json:"updated_at"`
-}
-
-type ActivityEvidence struct {
-	ID          uuid.UUID   `json:"id"`
-	ActivityID  uuid.UUID   `json:"activity_id"`
-	EvidenceUrl string      `json:"evidence_url"`
-	Description pgtype.Text `json:"description"`
-	CreatedAt   pgtype.Date `json:"created_at"`
-}
-
-type ActivityPillar struct {
-	ActivityID uuid.UUID `json:"activity_id"`
-	Pillar     Pillar    `json:"pillar"`
-}
-
 type CareerLadder struct {
 	ID              uuid.UUID   `json:"id"`
 	Level           LadderLevel `json:"level"`
@@ -186,6 +159,44 @@ type EvaluationCycle struct {
 	StartDate pgtype.Date `json:"start_date"`
 	EndDate   pgtype.Date `json:"end_date"`
 	IsActive  pgtype.Bool `json:"is_active"`
+}
+
+type Initiative struct {
+	ID                 uuid.UUID   `json:"id"`
+	UserID             uuid.UUID   `json:"user_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
+	Title              string      `json:"title"`
+	Description        pgtype.Text `json:"description"`
+	IsPdiTarget        bool        `json:"is_pdi_target"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
+	CompletedAt        pgtype.Date `json:"completed_at"`
+	CreatedAt          pgtype.Date `json:"created_at"`
+	UpdatedAt          pgtype.Date `json:"updated_at"`
+}
+
+type InitiativePillar struct {
+	InitiativeID uuid.UUID `json:"initiative_id"`
+	Pillar       Pillar    `json:"pillar"`
+}
+
+type Task struct {
+	ID                 uuid.UUID   `json:"id"`
+	InitiativeID       uuid.UUID   `json:"initiative_id"`
+	Title              string      `json:"title"`
+	Execution          pgtype.Text `json:"execution"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	CompletedAt        pgtype.Date `json:"completed_at"`
+	CreatedAt          pgtype.Date `json:"created_at"`
+	UpdatedAt          pgtype.Date `json:"updated_at"`
+}
+
+type TaskEvidence struct {
+	ID          uuid.UUID   `json:"id"`
+	TaskID      uuid.UUID   `json:"task_id"`
+	EvidenceUrl string      `json:"evidence_url"`
+	Description pgtype.Text `json:"description"`
+	CreatedAt   pgtype.Date `json:"created_at"`
 }
 
 type User struct {

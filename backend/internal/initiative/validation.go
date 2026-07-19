@@ -1,4 +1,4 @@
-package activity
+package initiative
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func ValidateActivityID(c *gin.Context) (uuid.UUID, error) {
+func ValidateInitiativeID(c *gin.Context) (uuid.UUID, error) {
 	id := c.Param("id")
 	if id == "" {
 		return uuid.UUID{}, errors.New("id is required")

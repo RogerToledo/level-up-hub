@@ -67,29 +67,23 @@ func (m *MockQuerier) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return args.Error(0)
 }
 
-// CreateActivity mocks the CreateActivity method.
-func (m *MockQuerier) CreateActivity(ctx context.Context, arg repository.CreateActivityParams) error {
+// CreateInitiative mocks the CreateInitiative method.
+func (m *MockQuerier) CreateInitiative(ctx context.Context, arg repository.CreateInitiativeParams) (repository.Initiative, error) {
 	args := m.Called(ctx, arg)
-	return args.Error(0)
+	return args.Get(0).(repository.Initiative), args.Error(1)
 }
 
-// FindActivityByID mocks the FindActivityByID method.
-func (m *MockQuerier) FindActivityByID(ctx context.Context, arg repository.FindActivityByIDParams) (repository.Activity, error) {
+// FindInitiativeByID mocks the FindInitiativeByID method.
+func (m *MockQuerier) FindInitiativeByID(ctx context.Context, arg repository.FindInitiativeByIDParams) (repository.FindInitiativeByIDRow, error) {
 	args := m.Called(ctx, arg)
 	if args.Get(0) == nil {
-		return repository.Activity{}, args.Error(1)
+		return repository.FindInitiativeByIDRow{}, args.Error(1)
 	}
-	return args.Get(0).(repository.Activity), args.Error(1)
+	return args.Get(0).(repository.FindInitiativeByIDRow), args.Error(1)
 }
 
-// UpdateActivityProgress mocks the UpdateActivityProgress method.
-func (m *MockQuerier) UpdateActivityProgress(ctx context.Context, arg repository.UpdateActivityProgressParams) error {
-	args := m.Called(ctx, arg)
-	return args.Error(0)
-}
-
-// DeleteActivity mocks the DeleteActivity method.
-func (m *MockQuerier) DeleteActivity(ctx context.Context, arg repository.DeleteActivityParams) error {
+// DeleteInitiative mocks the DeleteInitiative method.
+func (m *MockQuerier) DeleteInitiative(ctx context.Context, arg repository.DeleteInitiativeParams) error {
 	args := m.Called(ctx, arg)
 	return args.Error(0)
 }

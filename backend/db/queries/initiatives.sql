@@ -1,5 +1,5 @@
--- name: CreateActivity :one
-INSERT INTO activities (
+-- name: CreateInitiative :one
+INSERT INTO initiatives (
     user_id, 
     ladder_id, 
     title, 
@@ -12,21 +12,16 @@ INSERT INTO activities (
 )
 RETURNING *;
 
--- name: AddEvidence :one
-INSERT INTO activity_evidences (activity_id, evidence_url, description)
-VALUES ($1, $2, $3)
-RETURNING *;
-
--- name: UpdateActivityProgress :one
-UPDATE activities 
+-- name: UpdateInitiativeProgress :one
+UPDATE initiatives 
 SET 
     progress_percentage = $2,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $3
 RETURNING *;
 
--- name: UpdateActivity :one
-UPDATE activities 
+-- name: UpdateInitiative :one
+UPDATE initiatives 
 SET 
     title = $2,
     description = $3,
@@ -37,19 +32,32 @@ SET
 WHERE id = $1 AND user_id = $7
 RETURNING *;
 
--- name: DeleteActivity :exec
-DELETE FROM activities 
+-- name: DeleteInitiative :exec
+DELETE FROM initiatives 
 WHERE id = $1 AND user_id = $2;
 
--- name: FindActivityDetail :one
+-- name: FindInitiativeByID :one
+SELECT
+    a.id,
+    a.title,
+    a.description,
+    a.impact_summary,
+    a.is_pdi_target,
+    a.progress_percentage,
+    a.ladder_id,
+    a.user_id
+FROM initiatives a 
+WHERE a.id = $1 AND a.user_id = $2;
+
+-- name: FindInitiativeDetail :one
 SELECT 
     a.id, a.title, a.progress_percentage, a.impact_summary,
     cl.level
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.id = $1 AND a.user_id = $2;
 
--- name: FindActivityWithLadder :one
+-- name: FindInitiativeWithLadder :one
 SELECT 
     a.id, 
     a.user_id, 
@@ -65,11 +73,11 @@ SELECT
     cl.technical,
     cl.expected_results,
     cl.leadership_scope
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.id = $1 AND a.user_id = $2;
 
--- name: ListUserActivities :many
+-- name: ListUserInitiatives :many
 SELECT 
     a.id, 
     a.user_id, 
@@ -81,12 +89,12 @@ SELECT
     a.is_pdi_target,
     a.completed_at, 
     a.created_at,
-    (SELECT COUNT(*) FROM activity_evidences WHERE activity_id = a.id)::int as evidence_count
-FROM activities a
+    (SELECT COUNT(*) FROM tasks WHERE initiative_id = a.id)::int as task_count
+FROM initiatives a
 WHERE a.user_id = $1 
 ORDER BY a.created_at DESC;
 
--- name: ListUserActivitiesPaginated :many
+-- name: ListUserInitiativesPaginated :many
 SELECT 
     id, 
     user_id, 
@@ -97,13 +105,13 @@ SELECT
     impact_summary, 
     completed_at, 
     created_at
-FROM activities 
+FROM initiatives 
 WHERE user_id = $1 
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountUserActivities :one
-SELECT COUNT(*) FROM activities WHERE user_id = $1;
+-- name: CountUserInitiatives :one
+SELECT COUNT(*) FROM initiatives WHERE user_id = $1;
 
 -- name: FindPdiDashboard :many
 SELECT 
@@ -113,14 +121,14 @@ SELECT
     SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as total_achieved,
     SUM(CASE WHEN a.progress_percentage = 100 AND a.is_pdi_target = false THEN cl.xp_reward ELSE 0 END)::int as overdelivery_xp,
     COUNT(a.id)::int as activity_count
-FROM activities a
-JOIN activity_pillars ap ON a.id = ap.activity_id
+FROM initiatives a
+JOIN initiative_pillars ap ON a.id = ap.initiative_id
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.user_id = $1
 GROUP BY cl.level, ap.pillar
 ORDER BY cl.level ASC;
 
--- name: FindUserActivities :many
+-- name: FindUserInitiatives :many
 SELECT 
     a.id,
     a.title,
@@ -128,69 +136,14 @@ SELECT
     a.is_pdi_target,
     cl.level,
     COALESCE(string_agg(ap.pillar::text, ', '), '') as pillars
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-LEFT JOIN activity_pillars ap ON a.id = ap.activity_id
+LEFT JOIN initiative_pillars ap ON a.id = ap.initiative_id
 WHERE a.user_id = $1
 GROUP BY a.id, cl.level
 ORDER BY a.created_at DESC;
 
--- name: FindActivityByID :one
-SELECT
-	a.id,
-	a.title,
-	a.description,
-	a.impact_summary,
-	a.is_pdi_target,
-	a.progress_percentage,
-	a.ladder_id,
-	a.user_id 
-FROM activities a 
-WHERE a.id = $1 AND a.user_id = $2;
-
--- name: FindEvidencesByActivity :many
-SELECT * FROM activity_evidences 
-WHERE activity_id = $1 
-ORDER BY created_at DESC;
-
--- name: ListUserActivitiesWithEvidences :many
-SELECT 
-    a.id,
-    a.title,
-    a.progress_percentage,
-    cl.level,
-    COALESCE(
-        (SELECT json_agg(ed) FROM (
-            SELECT id, evidence_url, description FROM activity_evidences WHERE activity_id = a.id
-        ) ed), 
-        '[]'
-    )::json as evidences
-FROM activities a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1
-GROUP BY a.id, cl.level
-ORDER BY a.created_at DESC;
-
--- name: ListUserActivitiesWithEvidencesPaginated :many
-SELECT 
-    a.id,
-    a.title,
-    a.progress_percentage,
-    cl.level,
-    COALESCE(
-        (SELECT json_agg(ed) FROM (
-            SELECT id, evidence_url, description FROM activity_evidences WHERE activity_id = a.id
-        ) ed), 
-        '[]'
-    )::json as evidences
-FROM activities a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1
-GROUP BY a.id, cl.level
-ORDER BY a.created_at DESC
-LIMIT $2 OFFSET $3;
-
--- name: FindDetailedActivityReport :many
+-- name: FindDetailedInitiativeReport :many
 SELECT 
     a.id,
     a.title,
@@ -200,28 +153,15 @@ SELECT
     cl.xp_reward,
     (
         SELECT array_agg(ap.pillar::text)
-        FROM activity_pillars ap
-        WHERE ap.activity_id = a.id
-    ) as pillars,
-    COALESCE(
-        (
-            SELECT json_agg(json_build_object(
-                'url', ae.evidence_url,
-                'description', ae.description,
-                'created_at', ae.created_at
-            ))
-            FROM activity_evidences ae
-            WHERE ae.activity_id = a.id
-        ), 
-        '[]'
-    )::json as evidences
-FROM activities a
+        FROM initiative_pillars ap
+        WHERE ap.initiative_id = a.id
+    ) as pillars
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.user_id = $1
 ORDER BY a.progress_percentage DESC, a.created_at DESC;
 
 -- name: FindGapAnalysis :many
--- Gap analysis based on PDI activities (is_pdi_target = true) vs completed activities
 SELECT 
     cl.level,
     ap.pillar::text as pillar,
@@ -236,9 +176,9 @@ SELECT
              SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::float) * 100
         )::int
     END as completion_percentage
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
-JOIN activity_pillars ap ON a.id = ap.activity_id
+JOIN initiative_pillars ap ON a.id = ap.initiative_id
 WHERE a.user_id = $1 
   AND EXTRACT(YEAR FROM a.created_at)::int = $2::int
   AND a.is_pdi_target = true
@@ -246,12 +186,12 @@ GROUP BY cl.level, ap.pillar
 HAVING SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) > 0
 ORDER BY cl.level, ap.pillar;
 
--- name: FindActivityComposition :many
+-- name: FindInitiativeComposition :many
 SELECT 
     cl.level,
     COUNT(a.id)::int as total_activities,
     SUM(cl.xp_reward)::int as total_xp
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.user_id = $1 AND a.progress_percentage = 100
 GROUP BY cl.level

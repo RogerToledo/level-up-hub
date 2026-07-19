@@ -1,4 +1,4 @@
-package activity
+package initiative
 
 import (
 	"github.com/google/uuid"
@@ -6,7 +6,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/repository"
 )
 
-type CreateActivityDTO struct {
+type CreateInitiativeDTO struct {
 	UserID             uuid.UUID           `json:"user_id" binding:"required"`
 	LadderID           uuid.UUID           `json:"ladder_id" binding:"required"`
 	Pillars            []repository.Pillar `json:"pillars" binding:"required"`
@@ -17,8 +17,8 @@ type CreateActivityDTO struct {
 	IsPdiTarget        bool                `json:"is_pdi_target"`
 }
 
-func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityParams {
-	params := repository.CreateActivityParams{
+func (dto *CreateInitiativeDTO) ToRepositoryParams() repository.CreateInitiativeParams {
+	params := repository.CreateInitiativeParams{
 		UserID:             dto.UserID,
 		LadderID:           dto.LadderID,
 		Title:              dto.Title,
@@ -26,7 +26,6 @@ func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityPara
 		IsPdiTarget:        dto.IsPdiTarget,
 	}
 
-	// Converte ponteiros de string para pgtype.Text
 	if dto.Description != nil {
 		params.Description = pgtype.Text{String: *dto.Description, Valid: true}
 	} else {
@@ -42,7 +41,7 @@ func (dto *CreateActivityDTO) ToRepositoryParams() repository.CreateActivityPara
 	return params
 }
 
-type UpdateActivityDTO struct {
+type UpdateInitiativeDTO struct {
 	Title              string              `json:"title" binding:"required"`
 	Description        *string             `json:"description"`
 	ProgressPercentage int32               `json:"progress_percentage" binding:"gte=0,lte=100"`
@@ -52,16 +51,15 @@ type UpdateActivityDTO struct {
 	Pillars            []repository.Pillar `json:"pillars"`
 }
 
-func (dto *UpdateActivityDTO) ToRepositoryParams(activityID uuid.UUID, userID uuid.UUID) repository.UpdateActivityParams {
-	params := repository.UpdateActivityParams{
-		ID:                 activityID,
+func (dto *UpdateInitiativeDTO) ToRepositoryParams(initiativeID uuid.UUID, userID uuid.UUID) repository.UpdateInitiativeParams {
+	params := repository.UpdateInitiativeParams{
+		ID:                 initiativeID,
 		UserID:             userID,
 		Title:              dto.Title,
 		ProgressPercentage: dto.ProgressPercentage,
 		IsPdiTarget:        dto.IsPdiTarget,
 	}
 
-	// Converte ponteiros de string para pgtype.Text
 	if dto.Description != nil {
 		params.Description = pgtype.Text{String: *dto.Description, Valid: true}
 	} else {
@@ -85,41 +83,4 @@ type GapAnalysisResponse struct {
 	Gap        int32  `json:"gap"`
 	Status     string `json:"status"`
 	Percentage int32  `json:"percentage"`
-}
-
-type ReadinessCheck struct {
-	IsConsistent bool   `json:"is_consistent"`
-	Message      string `json:"message"`
-	TargetLevel  string `json:"target_level"`
-	TargetCount  int32  `json:"target_count"`
-	OthersCount  int32  `json:"others_count"`
-}
-
-type LevelComposition struct {
-	LevelName     string  `json:"level_name"`
-	ActivityCount int32   `json:"activity_count"`
-	TotalXP       int32   `json:"total_xp"`
-	VolumePercent float64 `json:"volume_percent"`
-	XpPercent     float64 `json:"xp_percent"`
-}
-
-type CareerRadar struct {
-	TotalActivities int32              `json:"total_activities"`
-	TotalXP         int32              `json:"total_xp"`
-	Breakdown       []LevelComposition `json:"breakdown"`
-}
-
-type LevelComparison struct {
-	LevelName string `json:"level_name"`
-	CurrentXP int32  `json:"current_xp"`
-	PrevXP    int32  `json:"prev_xp"`
-	Diff      int32  `json:"diff"` // If positive, you accelerated. If negative, you decelerated.
-}
-
-type ComparisonReport struct {
-	CurrentCycleName  string            `json:"current_cycle"`
-	PreviousCycleName string            `json:"previous_cycle"`
-	GrowthXP          int32             `json:"growth_xp"`      // Total XP difference
-	PercentChange     float64           `json:"percent_change"` // % change in XP
-	LevelEvolution    []LevelComparison `json:"level_evolution"`
 }

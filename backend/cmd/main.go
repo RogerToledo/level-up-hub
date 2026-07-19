@@ -11,20 +11,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/backend/config"
-	_ "github.com/me/level-up-hub/backend/docs" // Swagger docs
+	_ "github.com/me/level-up-hub/backend/docs"
 	"github.com/me/level-up-hub/backend/internal/account"
-	"github.com/me/level-up-hub/backend/internal/activity"
 	"github.com/me/level-up-hub/backend/internal/database"
 	"github.com/me/level-up-hub/backend/internal/email"
+	"github.com/me/level-up-hub/backend/internal/initiative"
 	"github.com/me/level-up-hub/backend/internal/ladder"
 	"github.com/me/level-up-hub/backend/internal/logger"
 	"github.com/me/level-up-hub/backend/internal/repository"
+	"github.com/me/level-up-hub/backend/internal/task"
 	"github.com/me/level-up-hub/backend/routes"
 )
 
 // @title           Level Up Hub API
 // @version         1.0
-// @description     API for career management and professional development with XP system, activities and reports.
+// @description     API for career management and professional development with XP system, initiatives and reports.
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   API Support
@@ -44,7 +45,6 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	// Configura logger estruturado
 	log := logger.Setup(cfg.Env)
 
 	if cfg.Env == "prod" {
@@ -76,32 +76,36 @@ func main() {
 	}
 
 	repo := repository.New(dbPool)
-	service := account.NewService(repo)
-	handler := account.NewHandler(service, cfg)
+
+	// Services
+	accountService := account.NewService(repo)
 	ladderService := ladder.NewService(repo)
-	ladderHandler := ladder.NewHandler(ladderService, cfg)
-	activityService := activity.NewService(repo, dbPool)
+	initiativeService := initiative.NewService(repo, dbPool)
+	taskService := task.NewService(repo, dbPool)
 	emailService := email.NewService(cfg)
-	activityHandler := activity.NewHandler(activityService, cfg, emailService)
+
+	// Handlers
+	accountHandler := account.NewHandler(accountService, cfg)
+	ladderHandler := ladder.NewHandler(ladderService, cfg)
+	initiativeHandler := initiative.NewHandler(initiativeService, cfg, emailService)
+	taskHandler := task.NewHandler(taskService, cfg)
 
 	r := routes.NewRouter(routes.RouterConfig{
-		UserHandler:     handler,
-		LadderHandler:   ladderHandler,
-		ActivityHandler: activityHandler,
+		UserHandler:       accountHandler,
+		LadderHandler:     ladderHandler,
+		InitiativeHandler: initiativeHandler,
+		TaskHandler:       taskHandler,
 	}, dbPool, cfg)
 
-	// Configure HTTP server
 	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: r,
-		// Timeout configurations for security
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	// Start server in a goroutine
 	go func() {
 		log.Info("server starting",
 			slog.String("port", cfg.Port),
@@ -114,26 +118,21 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
-	// SIGINT (Ctrl+C) and SIGTERM (kill) are captured
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	log.Info("shutdown signal received, initiating graceful shutdown...")
 
-	// Graceful shutdown with 30 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Shutdown server
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Error("server forced to shutdown", slog.String("error", err.Error()))
 	} else {
 		log.Info("server shutdown completed successfully")
 	}
 
-	// Close database pool
 	log.Info("closing database connection pool...")
 	dbPool.Close()
 	log.Info("database connections closed")

@@ -9,19 +9,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/me/level-up-hub/backend/config"
 	"github.com/me/level-up-hub/backend/internal/account"
-	"github.com/me/level-up-hub/backend/internal/activity"
 	"github.com/me/level-up-hub/backend/internal/api"
 	"github.com/me/level-up-hub/backend/internal/database"
+	"github.com/me/level-up-hub/backend/internal/initiative"
 	"github.com/me/level-up-hub/backend/internal/ladder"
+	"github.com/me/level-up-hub/backend/internal/task"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type RouterConfig struct {
-	UserHandler     *account.Handler
-	LadderHandler   *ladder.LadderHandler
-	ActivityHandler *activity.ActivityHandler
+	UserHandler       *account.Handler
+	LadderHandler     *ladder.LadderHandler
+	InitiativeHandler *initiative.InitiativeHandler
+	TaskHandler       *task.TaskHandler
 }
 
 func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *gin.Engine {
@@ -42,9 +44,8 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 		gin.Recovery(),
 	)
 
-	// Health check endpoint with database connectivity and pool stats
+	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
-		// Check database health
 		if err := database.HealthCheck(c.Request.Context(), dbPool); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":   "down",
@@ -54,7 +55,6 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 			return
 		}
 
-		// Return pool statistics
 		stats := database.GetPoolStats(dbPool)
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "up",
@@ -67,41 +67,51 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 		})
 	})
 
-	// Swagger documentation endpoint
+	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 routes
-
-	// Account routes
 	v1 := r.Group("/v1")
 
 	// Public routes
 	v1.POST("/login", cfg.UserHandler.Login)
 	v1.POST("/register", cfg.UserHandler.Register)
 
-	// Protected routes
+	// Protected routes (any authenticated user)
 	protected := v1.Group("/")
 	protected.Use(api.AuthMiddleware(appCfg.JWTSecret))
 	protected.POST("/logout", cfg.UserHandler.Logout)
 	protected.GET("/users/:id", cfg.UserHandler.FindByID)
-	protected.PUT("/users/:id", cfg.UserHandler.UpdateOwnProfile) // Users can update their own profile
+	protected.PUT("/users/:id", cfg.UserHandler.UpdateOwnProfile)
 
-	protected.POST("/activities", cfg.ActivityHandler.Create)
-	protected.GET("/activities", cfg.ActivityHandler.List)
-	protected.PUT("/activities/:id", cfg.ActivityHandler.Update)
-	protected.PATCH("/activities/:id", cfg.ActivityHandler.UpdateProgress)
-	protected.DELETE("/activities/:id", cfg.ActivityHandler.Delete)
-	protected.GET("/dashboard", cfg.ActivityHandler.GetDashboard)
-	protected.POST("/activities/:id/evidence", cfg.ActivityHandler.AddEvidence)
-	protected.GET("/activities/:id/evidences", cfg.ActivityHandler.GetActivityEvidences)
-	protected.GET("/activities/:id/pillars", cfg.ActivityHandler.GetActivityPillars)
-	protected.GET("/activities/evidence", cfg.ActivityHandler.GetActivitiesEvidences)
-	protected.GET("/report", cfg.ActivityHandler.GetDetailedReport)
-	protected.GET("/gap-analysis", cfg.ActivityHandler.GetGapAnalysis)
-	protected.GET("/career-radar", cfg.ActivityHandler.GetReadinessCheck)
-	protected.GET("/cycle-comparison", cfg.ActivityHandler.GetCycleComparison)
-	protected.GET("/report/pdf", cfg.ActivityHandler.DownloadReportPDF)
-	protected.POST("/report/send-to-manager", cfg.ActivityHandler.SendReportToManager)
+	// Initiatives
+	protected.POST("/initiatives", cfg.InitiativeHandler.Create)
+	protected.GET("/initiatives", cfg.InitiativeHandler.List)
+	protected.PUT("/initiatives/:id", cfg.InitiativeHandler.Update)
+	protected.DELETE("/initiatives/:id", cfg.InitiativeHandler.Delete)
+	protected.GET("/initiatives/:id/pillars", cfg.InitiativeHandler.GetPillars)
+
+	// Tasks (within initiatives)
+	protected.POST("/tasks", cfg.TaskHandler.Create)
+	protected.PUT("/tasks/:id", cfg.TaskHandler.Update)
+	protected.DELETE("/tasks/:id", cfg.TaskHandler.Delete)
+	protected.GET("/initiatives/:id/tasks", cfg.TaskHandler.ListByInitiative)
+
+	// Task evidences
+	protected.POST("/tasks/:id/evidence", cfg.TaskHandler.AddEvidence)
+	protected.GET("/tasks/:id/evidences", cfg.TaskHandler.ListEvidences)
+	protected.DELETE("/evidences/:id", cfg.TaskHandler.DeleteEvidence)
+
+	// Dashboard & Reports
+	protected.GET("/dashboard", cfg.InitiativeHandler.GetDashboard)
+	protected.GET("/report", cfg.InitiativeHandler.GetDetailedReport)
+	protected.GET("/gap-analysis", cfg.InitiativeHandler.GetGapAnalysis)
+	protected.GET("/career-radar", cfg.InitiativeHandler.GetReadinessCheck)
+	protected.GET("/cycle-comparison", cfg.InitiativeHandler.GetCycleComparison)
+	protected.GET("/report/pdf", cfg.InitiativeHandler.DownloadReportPDF)
+	protected.POST("/report/send-to-manager", cfg.InitiativeHandler.SendReportToManager)
+
+	// Ladder (read for all users)
 	protected.GET("/ladders", cfg.LadderHandler.List)
 	protected.GET("/ladder/:id", cfg.LadderHandler.FindByID)
 
@@ -111,7 +121,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.DELETE("/users/:id", cfg.UserHandler.Delete)
 	admin.GET("/users", cfg.UserHandler.FindAll)
 	admin.POST("/users", cfg.UserHandler.Register)
-	admin.PATCH("/users/:id", cfg.UserHandler.Update) // Admin can update any user
+	admin.PATCH("/users/:id", cfg.UserHandler.Update)
 
 	admin.POST("/ladder", cfg.LadderHandler.Create)
 	admin.PUT("/ladder/:id", cfg.LadderHandler.Update)

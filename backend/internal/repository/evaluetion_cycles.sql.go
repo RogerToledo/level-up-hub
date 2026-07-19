@@ -36,7 +36,7 @@ SELECT
     cl.level,
     SUM(cl.xp_reward)::int as total_xp,
     COUNT(a.id)::int as activity_count
-FROM activities a
+FROM initiatives a
 JOIN career_ladder cl ON a.ladder_id = cl.id
 WHERE a.user_id = $1 
   AND a.completed_at BETWEEN $2 AND $3 
