@@ -21,99 +21,23 @@ func NewService(repo *repository.Queries, pool *pgxpool.Pool) *Service {
 	return &Service{repo: repo, pool: pool}
 }
 
-func (s *Service) CreateCompleteInitiative(ctx context.Context, input CreateInitiativeDTO) error {
-	tx, err := s.pool.Begin(ctx)
+func (s *Service) Create(ctx context.Context, input CreateInitiativeDTO) error {
+	_, err := s.repo.CreateInitiative(ctx, input.ToRepositoryParams())
 	if err != nil {
-		slog.Error("failed to begin transaction",
-			slog.String("error", err.Error()),
-			slog.String("user_id", input.UserID.String()),
-		)
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	repoWithTx := s.repo.WithTx(tx)
-
-	initiative, err := repoWithTx.CreateInitiative(ctx, input.ToRepositoryParams())
-	if err != nil {
-		slog.Error("failed to create initiative",
-			slog.String("error", err.Error()),
-			slog.String("user_id", input.UserID.String()),
-		)
+		slog.Error("failed to create initiative", slog.String("error", err.Error()))
 		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, "iniciativa"), err)
 	}
-
-	for _, p := range input.Pillars {
-		_, err = repoWithTx.CreateInitiativePillar(ctx, repository.CreateInitiativePillarParams{
-			InitiativeID: initiative.ID,
-			Pillar:       p,
-		})
-		if err != nil {
-			slog.Error("failed to create initiative pillar",
-				slog.String("error", err.Error()),
-				slog.String("initiative_id", initiative.ID.String()),
-				slog.String("pillar", string(p)),
-			)
-			return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, apperr.PillarPT), err)
-		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		slog.Error("transaction commit failed",
-			slog.String("error", err.Error()),
-			slog.String("initiative_id", initiative.ID.String()),
-		)
-		return apperr.MessageError(fmt.Sprintf(apperr.ErrCreate, "iniciativa"), err)
-	}
-
 	return nil
 }
 
 func (s *Service) Update(ctx context.Context, initiativeID uuid.UUID, userID uuid.UUID, dto UpdateInitiativeDTO) error {
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	repoWithTx := s.repo.WithTx(tx)
-
 	params := dto.ToRepositoryParams(initiativeID, userID)
-	_, err = repoWithTx.UpdateInitiative(ctx, params)
+	_, err := s.repo.UpdateInitiative(ctx, params)
 	if err != nil {
-		slog.Error("failed to update initiative",
-			slog.String("initiative_id", initiativeID.String()),
-			slog.String("error", err.Error()),
-		)
+		slog.Error("failed to update initiative", slog.String("error", err.Error()))
 		return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, "iniciativa"), err)
 	}
-
-	if dto.LadderID != nil {
-		_, err = tx.Exec(ctx,
-			"UPDATE initiatives SET ladder_id = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
-			dto.LadderID, initiativeID, userID,
-		)
-		if err != nil {
-			return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, "iniciativa"), err)
-		}
-	}
-
-	if len(dto.Pillars) > 0 {
-		if err = repoWithTx.DeleteInitiativePillars(ctx, initiativeID); err != nil {
-			return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.PillarPT), err)
-		}
-		for _, p := range dto.Pillars {
-			_, err = repoWithTx.CreateInitiativePillar(ctx, repository.CreateInitiativePillarParams{
-				InitiativeID: initiativeID,
-				Pillar:       p,
-			})
-			if err != nil {
-				return apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.PillarPT), err)
-			}
-		}
-	}
-
-	return tx.Commit(ctx)
+	return nil
 }
 
 func (s *Service) Delete(ctx context.Context, initiativeID uuid.UUID, userID uuid.UUID) error {
@@ -129,10 +53,6 @@ func (s *Service) Delete(ctx context.Context, initiativeID uuid.UUID, userID uui
 
 func (s *Service) ListInitiatives(ctx context.Context, userID uuid.UUID) ([]repository.ListUserInitiativesRow, error) {
 	return s.repo.ListUserInitiatives(ctx, userID)
-}
-
-func (s *Service) GetInitiativePillars(ctx context.Context, initiativeID uuid.UUID) ([]repository.Pillar, error) {
-	return s.repo.GetInitiativePillars(ctx, initiativeID)
 }
 
 func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*DashboardResponse, error) {
@@ -158,7 +78,10 @@ func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*Da
 			highestTarget = row.Level
 		}
 
-		percentage := (float64(row.TotalAchieved) / float64(row.TotalPdiPlanned)) * 100
+		percentage := float64(0)
+		if row.TotalPdiPlanned > 0 {
+			percentage = (float64(row.TotalAchieved) / float64(row.TotalPdiPlanned)) * 100
+		}
 
 		resp.MaxPdiXp += row.TotalPdiPlanned
 		resp.TotalAchieved += row.TotalAchieved
@@ -188,9 +111,8 @@ func (s *Service) GetDetailedReportData(ctx context.Context, userID uuid.UUID) (
 	user, err := s.repo.FindUserByID(ctx, userID)
 	if err != nil {
 		return ReportData{
-			Initiatives:  initiatives,
-			UserName:     "Colaborador",
-			UserEmail:    "",
+			Initiatives: initiatives,
+			UserName:    "Colaborador",
 		}, nil
 	}
 
@@ -251,7 +173,6 @@ func (s *Service) GetCareerRadar(ctx context.Context, userID uuid.UUID) (*Career
 	for _, row := range rows {
 		volPct := 0.0
 		xpPct := 0.0
-
 		if radar.TotalActivities > 0 {
 			volPct = (float64(row.TotalActivities) / float64(radar.TotalActivities)) * 100
 		}
@@ -299,7 +220,6 @@ func (s *Service) GetCycleComparison(ctx context.Context, userID uuid.UUID) (*Co
 	for _, c := range currentPerf {
 		totalCurrXP += c.TotalXp
 		prevXP := prevMap[string(c.Level)]
-
 		report.LevelEvolution = append(report.LevelEvolution, LevelComparison{
 			LevelName: string(c.Level),
 			CurrentXP: c.TotalXp,

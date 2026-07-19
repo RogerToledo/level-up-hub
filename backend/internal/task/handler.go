@@ -85,12 +85,30 @@ func (h *TaskHandler) ListByInitiative(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
 	if tasks == nil {
 		tasks = []repository.ListTasksByInitiativeRow{}
 	}
 
 	rest.Send(c.Writer, tasks, http.StatusOK)
+}
+
+func (h *TaskHandler) GetPillars(c *gin.Context) {
+	taskID, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	pillars, err := h.service.GetTaskPillars(c.Request.Context(), taskID)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+	if pillars == nil {
+		pillars = []repository.Pillar{}
+	}
+
+	rest.Send(c.Writer, pillars, http.StatusOK)
 }
 
 func (h *TaskHandler) AddEvidence(c *gin.Context) {
@@ -130,7 +148,6 @@ func (h *TaskHandler) ListEvidences(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
 	if evidences == nil {
 		evidences = []repository.TaskEvidence{}
 	}

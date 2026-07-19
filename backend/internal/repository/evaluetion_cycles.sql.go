@@ -35,12 +35,13 @@ const findPerformanceByPeriod = `-- name: FindPerformanceByPeriod :many
 SELECT 
     cl.level,
     SUM(cl.xp_reward)::int as total_xp,
-    COUNT(a.id)::int as activity_count
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1 
-  AND a.completed_at BETWEEN $2 AND $3 
-  AND a.progress_percentage = 100
+    COUNT(t.id)::int as activity_count
+FROM tasks t
+JOIN initiatives i ON t.initiative_id = i.id
+JOIN career_ladder cl ON t.ladder_id = cl.id
+WHERE i.user_id = $1 
+  AND t.completed_at BETWEEN $2 AND $3 
+  AND t.progress_percentage = 100
 GROUP BY cl.level
 `
 

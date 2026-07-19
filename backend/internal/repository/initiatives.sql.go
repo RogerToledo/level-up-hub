@@ -25,49 +25,35 @@ func (q *Queries) CountUserInitiatives(ctx context.Context, userID uuid.UUID) (i
 
 const createInitiative = `-- name: CreateInitiative :one
 INSERT INTO initiatives (
-    user_id, 
-    ladder_id, 
-    title, 
-    description, 
-    progress_percentage, 
-    impact_summary, 
-    is_pdi_target
+    user_id, title, description, is_pdi_target
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
+    $1, $2, $3, $4
 )
-RETURNING id, user_id, ladder_id, title, description, is_pdi_target, progress_percentage, impact_summary, completed_at, created_at, updated_at
+RETURNING id, user_id, title, description, is_pdi_target, progress_percentage, completed_at, created_at, updated_at
 `
 
 type CreateInitiativeParams struct {
-	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
-	Title              string      `json:"title"`
-	Description        pgtype.Text `json:"description"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	IsPdiTarget        bool        `json:"is_pdi_target"`
+	UserID      uuid.UUID   `json:"user_id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	IsPdiTarget bool        `json:"is_pdi_target"`
 }
 
 func (q *Queries) CreateInitiative(ctx context.Context, arg CreateInitiativeParams) (Initiative, error) {
 	row := q.db.QueryRow(ctx, createInitiative,
 		arg.UserID,
-		arg.LadderID,
 		arg.Title,
 		arg.Description,
-		arg.ProgressPercentage,
-		arg.ImpactSummary,
 		arg.IsPdiTarget,
 	)
 	var i Initiative
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.LadderID,
 		&i.Title,
 		&i.Description,
 		&i.IsPdiTarget,
 		&i.ProgressPercentage,
-		&i.ImpactSummary,
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -76,7 +62,7 @@ func (q *Queries) CreateInitiative(ctx context.Context, arg CreateInitiativePara
 }
 
 const deleteInitiative = `-- name: DeleteInitiative :exec
-DELETE FROM initiatives 
+DELETE FROM initiatives
 WHERE id = $1 AND user_id = $2
 `
 
@@ -91,7 +77,7 @@ func (q *Queries) DeleteInitiative(ctx context.Context, arg DeleteInitiativePara
 }
 
 const findCurrentTargetLevel = `-- name: FindCurrentTargetLevel :one
-SELECT 
+SELECT
     cl.level,
     cl.id as ladder_id
 FROM xp_target xt
@@ -113,22 +99,23 @@ func (q *Queries) FindCurrentTargetLevel(ctx context.Context, year int32) (FindC
 }
 
 const findDetailedInitiativeReport = `-- name: FindDetailedInitiativeReport :many
-SELECT 
-    a.id,
-    a.title,
-    a.progress_percentage,
-    a.is_pdi_target,
+SELECT
+    t.id,
+    t.title,
+    t.progress_percentage,
+    i.is_pdi_target,
     cl.level,
     cl.xp_reward,
     (
-        SELECT array_agg(ap.pillar::text)
-        FROM initiative_pillars ap
-        WHERE ap.initiative_id = a.id
+        SELECT array_agg(tp.pillar::text)
+        FROM task_pillars tp
+        WHERE tp.task_id = t.id
     ) as pillars
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1
-ORDER BY a.progress_percentage DESC, a.created_at DESC
+FROM tasks t
+JOIN initiatives i ON t.initiative_id = i.id
+JOIN career_ladder cl ON t.ladder_id = cl.id
+WHERE i.user_id = $1
+ORDER BY t.progress_percentage DESC, t.created_at DESC
 `
 
 type FindDetailedInitiativeReportRow struct {
@@ -170,29 +157,30 @@ func (q *Queries) FindDetailedInitiativeReport(ctx context.Context, userID uuid.
 }
 
 const findGapAnalysis = `-- name: FindGapAnalysis :many
-SELECT 
+SELECT
     cl.level,
-    ap.pillar::text as pillar,
-    SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as target_xp,
-    SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as achieved_xp,
-    (SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) - 
-     SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END))::int as gap_xp,
-    CASE 
-        WHEN SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) = 0 THEN 0
+    tp.pillar::text as pillar,
+    SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as target_xp,
+    SUM(CASE WHEN t.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as achieved_xp,
+    (SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) -
+     SUM(CASE WHEN t.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END))::int as gap_xp,
+    CASE
+        WHEN SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) = 0 THEN 0
         ELSE ROUND(
-            (SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::float / 
-             SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::float) * 100
+            (SUM(CASE WHEN t.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::float /
+             SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::float) * 100
         )::int
     END as completion_percentage
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-JOIN initiative_pillars ap ON a.id = ap.initiative_id
-WHERE a.user_id = $1 
-  AND EXTRACT(YEAR FROM a.created_at)::int = $2::int
-  AND a.is_pdi_target = true
-GROUP BY cl.level, ap.pillar
-HAVING SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) > 0
-ORDER BY cl.level, ap.pillar
+FROM tasks t
+JOIN initiatives i ON t.initiative_id = i.id
+JOIN career_ladder cl ON t.ladder_id = cl.id
+JOIN task_pillars tp ON tp.task_id = t.id
+WHERE i.user_id = $1
+  AND EXTRACT(YEAR FROM t.created_at)::int = $2::int
+  AND i.is_pdi_target = true
+GROUP BY cl.level, tp.pillar
+HAVING SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END) > 0
+ORDER BY cl.level, tp.pillar
 `
 
 type FindGapAnalysisParams struct {
@@ -237,17 +225,9 @@ func (q *Queries) FindGapAnalysis(ctx context.Context, arg FindGapAnalysisParams
 }
 
 const findInitiativeByID = `-- name: FindInitiativeByID :one
-SELECT
-    a.id,
-    a.title,
-    a.description,
-    a.impact_summary,
-    a.is_pdi_target,
-    a.progress_percentage,
-    a.ladder_id,
-    a.user_id
-FROM initiatives a 
-WHERE a.id = $1 AND a.user_id = $2
+SELECT id, title, description, is_pdi_target, progress_percentage, user_id, created_at
+FROM initiatives
+WHERE id = $1 AND user_id = $2
 `
 
 type FindInitiativeByIDParams struct {
@@ -259,11 +239,10 @@ type FindInitiativeByIDRow struct {
 	ID                 uuid.UUID   `json:"id"`
 	Title              string      `json:"title"`
 	Description        pgtype.Text `json:"description"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	IsPdiTarget        bool        `json:"is_pdi_target"`
 	ProgressPercentage int32       `json:"progress_percentage"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
 	UserID             uuid.UUID   `json:"user_id"`
+	CreatedAt          pgtype.Date `json:"created_at"`
 }
 
 func (q *Queries) FindInitiativeByID(ctx context.Context, arg FindInitiativeByIDParams) (FindInitiativeByIDRow, error) {
@@ -273,23 +252,23 @@ func (q *Queries) FindInitiativeByID(ctx context.Context, arg FindInitiativeByID
 		&i.ID,
 		&i.Title,
 		&i.Description,
-		&i.ImpactSummary,
 		&i.IsPdiTarget,
 		&i.ProgressPercentage,
-		&i.LadderID,
 		&i.UserID,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const findInitiativeComposition = `-- name: FindInitiativeComposition :many
-SELECT 
+SELECT
     cl.level,
-    COUNT(a.id)::int as total_activities,
+    COUNT(t.id)::int as total_activities,
     SUM(cl.xp_reward)::int as total_xp
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1 AND a.progress_percentage = 100
+FROM tasks t
+JOIN initiatives i ON t.initiative_id = i.id
+JOIN career_ladder cl ON t.ladder_id = cl.id
+WHERE i.user_id = $1 AND t.progress_percentage = 100
 GROUP BY cl.level
 ORDER BY cl.level ASC
 `
@@ -320,119 +299,20 @@ func (q *Queries) FindInitiativeComposition(ctx context.Context, userID uuid.UUI
 	return items, nil
 }
 
-const findInitiativeDetail = `-- name: FindInitiativeDetail :one
-SELECT 
-    a.id, a.title, a.progress_percentage, a.impact_summary,
-    cl.level
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1 AND a.user_id = $2
-`
-
-type FindInitiativeDetailParams struct {
-	ID     uuid.UUID `json:"id"`
-	UserID uuid.UUID `json:"user_id"`
-}
-
-type FindInitiativeDetailRow struct {
-	ID                 uuid.UUID   `json:"id"`
-	Title              string      `json:"title"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	Level              LadderLevel `json:"level"`
-}
-
-func (q *Queries) FindInitiativeDetail(ctx context.Context, arg FindInitiativeDetailParams) (FindInitiativeDetailRow, error) {
-	row := q.db.QueryRow(ctx, findInitiativeDetail, arg.ID, arg.UserID)
-	var i FindInitiativeDetailRow
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.ProgressPercentage,
-		&i.ImpactSummary,
-		&i.Level,
-	)
-	return i, err
-}
-
-const findInitiativeWithLadder = `-- name: FindInitiativeWithLadder :one
-SELECT 
-    a.id, 
-    a.user_id, 
-    a.ladder_id, 
-    a.title, 
-    a.description, 
-    a.progress_percentage, 
-    a.impact_summary, 
-    a.completed_at, 
-    a.created_at,
-    cl.level, 
-    cl.xp_reward, 
-    cl.technical,
-    cl.expected_results,
-    cl.leadership_scope
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.id = $1 AND a.user_id = $2
-`
-
-type FindInitiativeWithLadderParams struct {
-	ID     uuid.UUID `json:"id"`
-	UserID uuid.UUID `json:"user_id"`
-}
-
-type FindInitiativeWithLadderRow struct {
-	ID                 uuid.UUID   `json:"id"`
-	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
-	Title              string      `json:"title"`
-	Description        pgtype.Text `json:"description"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	CompletedAt        pgtype.Date `json:"completed_at"`
-	CreatedAt          pgtype.Date `json:"created_at"`
-	Level              LadderLevel `json:"level"`
-	XpReward           int32       `json:"xp_reward"`
-	Technical          string      `json:"technical"`
-	ExpectedResults    string      `json:"expected_results"`
-	LeadershipScope    string      `json:"leadership_scope"`
-}
-
-func (q *Queries) FindInitiativeWithLadder(ctx context.Context, arg FindInitiativeWithLadderParams) (FindInitiativeWithLadderRow, error) {
-	row := q.db.QueryRow(ctx, findInitiativeWithLadder, arg.ID, arg.UserID)
-	var i FindInitiativeWithLadderRow
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.LadderID,
-		&i.Title,
-		&i.Description,
-		&i.ProgressPercentage,
-		&i.ImpactSummary,
-		&i.CompletedAt,
-		&i.CreatedAt,
-		&i.Level,
-		&i.XpReward,
-		&i.Technical,
-		&i.ExpectedResults,
-		&i.LeadershipScope,
-	)
-	return i, err
-}
-
 const findPdiDashboard = `-- name: FindPdiDashboard :many
-SELECT 
+SELECT
     cl.level,
-    ap.pillar::text as pillar,
-    SUM(CASE WHEN a.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as total_pdi_planned,
-    SUM(CASE WHEN a.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as total_achieved,
-    SUM(CASE WHEN a.progress_percentage = 100 AND a.is_pdi_target = false THEN cl.xp_reward ELSE 0 END)::int as overdelivery_xp,
-    COUNT(a.id)::int as activity_count
-FROM initiatives a
-JOIN initiative_pillars ap ON a.id = ap.initiative_id
-JOIN career_ladder cl ON a.ladder_id = cl.id
-WHERE a.user_id = $1
-GROUP BY cl.level, ap.pillar
+    tp.pillar::text as pillar,
+    SUM(CASE WHEN i.is_pdi_target = true THEN cl.xp_reward ELSE 0 END)::int as total_pdi_planned,
+    SUM(CASE WHEN t.progress_percentage = 100 THEN cl.xp_reward ELSE 0 END)::int as total_achieved,
+    SUM(CASE WHEN t.progress_percentage = 100 AND i.is_pdi_target = false THEN cl.xp_reward ELSE 0 END)::int as overdelivery_xp,
+    COUNT(t.id)::int as activity_count
+FROM initiatives i
+JOIN tasks t ON t.initiative_id = i.id
+JOIN task_pillars tp ON tp.task_id = t.id
+JOIN career_ladder cl ON t.ladder_id = cl.id
+WHERE i.user_id = $1
+GROUP BY cl.level, tp.pillar
 ORDER BY cl.level ASC
 `
 
@@ -472,84 +352,28 @@ func (q *Queries) FindPdiDashboard(ctx context.Context, userID uuid.UUID) ([]Fin
 	return items, nil
 }
 
-const findUserInitiatives = `-- name: FindUserInitiatives :many
-SELECT 
-    a.id,
-    a.title,
-    a.progress_percentage,
-    a.is_pdi_target,
-    cl.level,
-    COALESCE(string_agg(ap.pillar::text, ', '), '') as pillars
-FROM initiatives a
-JOIN career_ladder cl ON a.ladder_id = cl.id
-LEFT JOIN initiative_pillars ap ON a.id = ap.initiative_id
-WHERE a.user_id = $1
-GROUP BY a.id, cl.level
-ORDER BY a.created_at DESC
-`
-
-type FindUserInitiativesRow struct {
-	ID                 uuid.UUID   `json:"id"`
-	Title              string      `json:"title"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	IsPdiTarget        bool        `json:"is_pdi_target"`
-	Level              LadderLevel `json:"level"`
-	Pillars            interface{} `json:"pillars"`
-}
-
-func (q *Queries) FindUserInitiatives(ctx context.Context, userID uuid.UUID) ([]FindUserInitiativesRow, error) {
-	rows, err := q.db.Query(ctx, findUserInitiatives, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FindUserInitiativesRow
-	for rows.Next() {
-		var i FindUserInitiativesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.ProgressPercentage,
-			&i.IsPdiTarget,
-			&i.Level,
-			&i.Pillars,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listUserInitiatives = `-- name: ListUserInitiatives :many
-SELECT 
-    a.id, 
-    a.user_id, 
-    a.ladder_id, 
-    a.title, 
-    a.description, 
-    a.progress_percentage, 
-    a.impact_summary, 
-    a.is_pdi_target,
-    a.completed_at, 
-    a.created_at,
-    (SELECT COUNT(*) FROM tasks WHERE initiative_id = a.id)::int as task_count
-FROM initiatives a
-WHERE a.user_id = $1 
-ORDER BY a.created_at DESC
+SELECT
+    i.id,
+    i.user_id,
+    i.title,
+    i.description,
+    i.progress_percentage,
+    i.is_pdi_target,
+    i.completed_at,
+    i.created_at,
+    (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count
+FROM initiatives i
+WHERE i.user_id = $1
+ORDER BY i.created_at DESC
 `
 
 type ListUserInitiativesRow struct {
 	ID                 uuid.UUID   `json:"id"`
 	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
 	Title              string      `json:"title"`
 	Description        pgtype.Text `json:"description"`
 	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	IsPdiTarget        bool        `json:"is_pdi_target"`
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
@@ -568,11 +392,9 @@ func (q *Queries) ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.LadderID,
 			&i.Title,
 			&i.Description,
 			&i.ProgressPercentage,
-			&i.ImpactSummary,
 			&i.IsPdiTarget,
 			&i.CompletedAt,
 			&i.CreatedAt,
@@ -588,92 +410,23 @@ func (q *Queries) ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]
 	return items, nil
 }
 
-const listUserInitiativesPaginated = `-- name: ListUserInitiativesPaginated :many
-SELECT 
-    id, 
-    user_id, 
-    ladder_id, 
-    title, 
-    description, 
-    progress_percentage, 
-    impact_summary, 
-    completed_at, 
-    created_at
-FROM initiatives 
-WHERE user_id = $1 
-ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
-`
-
-type ListUserInitiativesPaginatedParams struct {
-	UserID uuid.UUID `json:"user_id"`
-	Limit  int32     `json:"limit"`
-	Offset int32     `json:"offset"`
-}
-
-type ListUserInitiativesPaginatedRow struct {
-	ID                 uuid.UUID   `json:"id"`
-	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
-	Title              string      `json:"title"`
-	Description        pgtype.Text `json:"description"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	CompletedAt        pgtype.Date `json:"completed_at"`
-	CreatedAt          pgtype.Date `json:"created_at"`
-}
-
-func (q *Queries) ListUserInitiativesPaginated(ctx context.Context, arg ListUserInitiativesPaginatedParams) ([]ListUserInitiativesPaginatedRow, error) {
-	rows, err := q.db.Query(ctx, listUserInitiativesPaginated, arg.UserID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListUserInitiativesPaginatedRow
-	for rows.Next() {
-		var i ListUserInitiativesPaginatedRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.LadderID,
-			&i.Title,
-			&i.Description,
-			&i.ProgressPercentage,
-			&i.ImpactSummary,
-			&i.CompletedAt,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateInitiative = `-- name: UpdateInitiative :one
-UPDATE initiatives 
-SET 
+UPDATE initiatives
+SET
     title = $2,
     description = $3,
-    progress_percentage = $4,
-    impact_summary = $5,
-    is_pdi_target = $6,
+    is_pdi_target = $4,
     updated_at = NOW()
-WHERE id = $1 AND user_id = $7
-RETURNING id, user_id, ladder_id, title, description, is_pdi_target, progress_percentage, impact_summary, completed_at, created_at, updated_at
+WHERE id = $1 AND user_id = $5
+RETURNING id, user_id, title, description, is_pdi_target, progress_percentage, completed_at, created_at, updated_at
 `
 
 type UpdateInitiativeParams struct {
-	ID                 uuid.UUID   `json:"id"`
-	Title              string      `json:"title"`
-	Description        pgtype.Text `json:"description"`
-	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
-	IsPdiTarget        bool        `json:"is_pdi_target"`
-	UserID             uuid.UUID   `json:"user_id"`
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	IsPdiTarget bool        `json:"is_pdi_target"`
+	UserID      uuid.UUID   `json:"user_id"`
 }
 
 func (q *Queries) UpdateInitiative(ctx context.Context, arg UpdateInitiativeParams) (Initiative, error) {
@@ -681,8 +434,6 @@ func (q *Queries) UpdateInitiative(ctx context.Context, arg UpdateInitiativePara
 		arg.ID,
 		arg.Title,
 		arg.Description,
-		arg.ProgressPercentage,
-		arg.ImpactSummary,
 		arg.IsPdiTarget,
 		arg.UserID,
 	)
@@ -690,46 +441,10 @@ func (q *Queries) UpdateInitiative(ctx context.Context, arg UpdateInitiativePara
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.LadderID,
 		&i.Title,
 		&i.Description,
 		&i.IsPdiTarget,
 		&i.ProgressPercentage,
-		&i.ImpactSummary,
-		&i.CompletedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateInitiativeProgress = `-- name: UpdateInitiativeProgress :one
-UPDATE initiatives 
-SET 
-    progress_percentage = $2,
-    updated_at = NOW()
-WHERE id = $1 AND user_id = $3
-RETURNING id, user_id, ladder_id, title, description, is_pdi_target, progress_percentage, impact_summary, completed_at, created_at, updated_at
-`
-
-type UpdateInitiativeProgressParams struct {
-	ID                 uuid.UUID `json:"id"`
-	ProgressPercentage int32     `json:"progress_percentage"`
-	UserID             uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) UpdateInitiativeProgress(ctx context.Context, arg UpdateInitiativeProgressParams) (Initiative, error) {
-	row := q.db.QueryRow(ctx, updateInitiativeProgress, arg.ID, arg.ProgressPercentage, arg.UserID)
-	var i Initiative
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.LadderID,
-		&i.Title,
-		&i.Description,
-		&i.IsPdiTarget,
-		&i.ProgressPercentage,
-		&i.ImpactSummary,
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,

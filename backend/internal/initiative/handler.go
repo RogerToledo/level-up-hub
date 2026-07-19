@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/me/level-up-hub/backend/apperr"
 	"github.com/me/level-up-hub/backend/config"
 	"github.com/me/level-up-hub/backend/internal/email"
@@ -22,33 +21,17 @@ type InitiativeHandler struct {
 }
 
 func NewHandler(s *Service, cfg *config.Config, emailService *email.Service) *InitiativeHandler {
-	return &InitiativeHandler{
-		service:      s,
-		cfg:          cfg,
-		emailService: emailService,
-	}
+	return &InitiativeHandler{service: s, cfg: cfg, emailService: emailService}
 }
 
 func (h *InitiativeHandler) Create(c *gin.Context) {
 	var dto CreateInitiativeDTO
-
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		var details interface{}
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			errorMessages := make(map[string]string)
-			for _, fieldError := range validationErrors {
-				errorMessages[fieldError.Field()] = getErrorMessage(fieldError)
-			}
-			details = errorMessages
-		} else {
-			details = err.Error()
-		}
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, details)
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
-	err := h.service.CreateCompleteInitiative(c.Request.Context(), dto)
-	if err != nil {
+	if err := h.service.Create(c.Request.Context(), dto); err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
@@ -62,7 +45,6 @@ func (h *InitiativeHandler) Update(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
-
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
@@ -89,7 +71,6 @@ func (h *InitiativeHandler) Delete(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
-
 	userID, err := identity.GetUserIDFromContext(c)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
@@ -116,32 +97,11 @@ func (h *InitiativeHandler) List(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
 	if initiatives == nil {
 		initiatives = []repository.ListUserInitiativesRow{}
 	}
 
 	rest.Send(c.Writer, initiatives, http.StatusOK)
-}
-
-func (h *InitiativeHandler) GetPillars(c *gin.Context) {
-	initiativeID, err := identity.ValidateIDParam(c)
-	if err != nil {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
-		return
-	}
-
-	pillars, err := h.service.GetInitiativePillars(c.Request.Context(), initiativeID)
-	if err != nil {
-		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
-		return
-	}
-
-	if pillars == nil {
-		pillars = []repository.Pillar{}
-	}
-
-	rest.Send(c.Writer, pillars, http.StatusOK)
 }
 
 func (h *InitiativeHandler) GetDashboard(c *gin.Context) {
@@ -172,7 +132,6 @@ func (h *InitiativeHandler) GetDetailedReport(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
 	if report == nil {
 		report = []repository.FindDetailedInitiativeReportRow{}
 	}
@@ -199,7 +158,6 @@ func (h *InitiativeHandler) GetGapAnalysis(c *gin.Context) {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
-
 	if gapAnalysis == nil {
 		gapAnalysis = []GapAnalysisResponse{}
 	}
@@ -279,7 +237,7 @@ func (h *InitiativeHandler) SendReportToManager(c *gin.Context) {
 
 	if !user.ManagerEmail.Valid || user.ManagerEmail.String == "" {
 		rest.Error(c.Writer, http.StatusBadRequest, "Engineering manager not registered",
-			"Please register your manager's email in your profile settings before sending the report.")
+			"Please register your manager's email in your profile settings.")
 		return
 	}
 
@@ -301,11 +259,7 @@ func (h *InitiativeHandler) SendReportToManager(c *gin.Context) {
 	}
 
 	err = h.emailService.SendReportToManager(
-		managerName,
-		user.ManagerEmail.String,
-		user.Username,
-		user.Email,
-		pdfBuffer.Bytes(),
+		managerName, user.ManagerEmail.String, user.Username, user.Email, pdfBuffer.Bytes(),
 	)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, "Error sending email", err)
@@ -316,21 +270,4 @@ func (h *InitiativeHandler) SendReportToManager(c *gin.Context) {
 		"message": "Report successfully sent to " + user.ManagerEmail.String,
 		"status":  "success",
 	}, http.StatusOK)
-}
-
-func getErrorMessage(fe validator.FieldError) string {
-	switch fe.Tag() {
-	case "required":
-		return fmt.Sprintf("O campo '%s' e obrigatorio", fe.Field())
-	case "min":
-		return fmt.Sprintf("O campo '%s' deve ser no minimo %s", fe.Field(), fe.Param())
-	case "max":
-		return fmt.Sprintf("O campo '%s' deve ser no maximo %s", fe.Field(), fe.Param())
-	case "email":
-		return fmt.Sprintf("O campo '%s' deve ser um email valido", fe.Field())
-	case "uuid":
-		return fmt.Sprintf("O campo '%s' deve ser um UUID valido", fe.Field())
-	default:
-		return fmt.Sprintf("O campo '%s' e invalido", fe.Field())
-	}
 }

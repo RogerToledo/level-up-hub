@@ -89,13 +89,13 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/initiatives", cfg.InitiativeHandler.List)
 	protected.PUT("/initiatives/:id", cfg.InitiativeHandler.Update)
 	protected.DELETE("/initiatives/:id", cfg.InitiativeHandler.Delete)
-	protected.GET("/initiatives/:id/pillars", cfg.InitiativeHandler.GetPillars)
 
 	// Tasks (within initiatives)
 	protected.POST("/tasks", cfg.TaskHandler.Create)
 	protected.PUT("/tasks/:id", cfg.TaskHandler.Update)
 	protected.DELETE("/tasks/:id", cfg.TaskHandler.Delete)
 	protected.GET("/initiatives/:id/tasks", cfg.TaskHandler.ListByInitiative)
+	protected.GET("/tasks/:id/pillars", cfg.TaskHandler.GetPillars)
 
 	// Task evidences
 	protected.POST("/tasks/:id/evidence", cfg.TaskHandler.AddEvidence)

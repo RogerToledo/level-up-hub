@@ -164,20 +164,13 @@ type EvaluationCycle struct {
 type Initiative struct {
 	ID                 uuid.UUID   `json:"id"`
 	UserID             uuid.UUID   `json:"user_id"`
-	LadderID           uuid.UUID   `json:"ladder_id"`
 	Title              string      `json:"title"`
 	Description        pgtype.Text `json:"description"`
 	IsPdiTarget        bool        `json:"is_pdi_target"`
 	ProgressPercentage int32       `json:"progress_percentage"`
-	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
 	UpdatedAt          pgtype.Date `json:"updated_at"`
-}
-
-type InitiativePillar struct {
-	InitiativeID uuid.UUID `json:"initiative_id"`
-	Pillar       Pillar    `json:"pillar"`
 }
 
 type Task struct {
@@ -189,6 +182,8 @@ type Task struct {
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
 	UpdatedAt          pgtype.Date `json:"updated_at"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
 }
 
 type TaskEvidence struct {
@@ -197,6 +192,11 @@ type TaskEvidence struct {
 	EvidenceUrl string      `json:"evidence_url"`
 	Description pgtype.Text `json:"description"`
 	CreatedAt   pgtype.Date `json:"created_at"`
+}
+
+type TaskPillar struct {
+	TaskID uuid.UUID `json:"task_id"`
+	Pillar Pillar    `json:"pillar"`
 }
 
 type User struct {

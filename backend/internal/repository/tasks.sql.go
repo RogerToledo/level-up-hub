@@ -27,25 +27,29 @@ func (q *Queries) CalculateInitiativeProgress(ctx context.Context, initiativeID 
 
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (
-    initiative_id, title, execution, progress_percentage
+    initiative_id, ladder_id, title, execution, impact_summary, progress_percentage
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5, $6
 )
-RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at
+RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary
 `
 
 type CreateTaskParams struct {
 	InitiativeID       uuid.UUID   `json:"initiative_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
 	Title              string      `json:"title"`
 	Execution          pgtype.Text `json:"execution"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, createTask,
 		arg.InitiativeID,
+		arg.LadderID,
 		arg.Title,
 		arg.Execution,
+		arg.ImpactSummary,
 		arg.ProgressPercentage,
 	)
 	var i Task
@@ -58,6 +62,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LadderID,
+		&i.ImpactSummary,
 	)
 	return i, err
 }
@@ -72,19 +78,34 @@ func (q *Queries) DeleteTask(ctx context.Context, id uuid.UUID) error {
 }
 
 const findTaskByID = `-- name: FindTaskByID :one
-SELECT id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at
 FROM tasks
 WHERE id = $1
 `
 
-func (q *Queries) FindTaskByID(ctx context.Context, id uuid.UUID) (Task, error) {
+type FindTaskByIDRow struct {
+	ID                 uuid.UUID   `json:"id"`
+	InitiativeID       uuid.UUID   `json:"initiative_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
+	Title              string      `json:"title"`
+	Execution          pgtype.Text `json:"execution"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
+	ProgressPercentage int32       `json:"progress_percentage"`
+	CompletedAt        pgtype.Date `json:"completed_at"`
+	CreatedAt          pgtype.Date `json:"created_at"`
+	UpdatedAt          pgtype.Date `json:"updated_at"`
+}
+
+func (q *Queries) FindTaskByID(ctx context.Context, id uuid.UUID) (FindTaskByIDRow, error) {
 	row := q.db.QueryRow(ctx, findTaskByID, id)
-	var i Task
+	var i FindTaskByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.InitiativeID,
+		&i.LadderID,
 		&i.Title,
 		&i.Execution,
+		&i.ImpactSummary,
 		&i.ProgressPercentage,
 		&i.CompletedAt,
 		&i.CreatedAt,
@@ -94,7 +115,7 @@ func (q *Queries) FindTaskByID(ctx context.Context, id uuid.UUID) (Task, error) 
 }
 
 const listTasksByInitiative = `-- name: ListTasksByInitiative :many
-SELECT id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at,
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at,
     (SELECT COUNT(*) FROM task_evidences WHERE task_id = tasks.id)::int as evidence_count
 FROM tasks
 WHERE initiative_id = $1
@@ -104,8 +125,10 @@ ORDER BY created_at DESC
 type ListTasksByInitiativeRow struct {
 	ID                 uuid.UUID   `json:"id"`
 	InitiativeID       uuid.UUID   `json:"initiative_id"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
 	Title              string      `json:"title"`
 	Execution          pgtype.Text `json:"execution"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
@@ -125,8 +148,10 @@ func (q *Queries) ListTasksByInitiative(ctx context.Context, initiativeID uuid.U
 		if err := rows.Scan(
 			&i.ID,
 			&i.InitiativeID,
+			&i.LadderID,
 			&i.Title,
 			&i.Execution,
+			&i.ImpactSummary,
 			&i.ProgressPercentage,
 			&i.CompletedAt,
 			&i.CreatedAt,
@@ -147,18 +172,22 @@ const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET
     title = $2,
-    execution = $3,
-    progress_percentage = $4,
-    completed_at = CASE WHEN $4 = 100 THEN CURRENT_DATE ELSE NULL END,
+    ladder_id = $3,
+    execution = $4,
+    impact_summary = $5,
+    progress_percentage = $6,
+    completed_at = CASE WHEN $6 = 100 THEN CURRENT_DATE ELSE NULL END,
     updated_at = CURRENT_DATE
 WHERE id = $1
-RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at
+RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary
 `
 
 type UpdateTaskParams struct {
 	ID                 uuid.UUID   `json:"id"`
 	Title              string      `json:"title"`
+	LadderID           uuid.UUID   `json:"ladder_id"`
 	Execution          pgtype.Text `json:"execution"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
 }
 
@@ -166,7 +195,9 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 	row := q.db.QueryRow(ctx, updateTask,
 		arg.ID,
 		arg.Title,
+		arg.LadderID,
 		arg.Execution,
+		arg.ImpactSummary,
 		arg.ProgressPercentage,
 	)
 	var i Task
@@ -179,6 +210,8 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LadderID,
+		&i.ImpactSummary,
 	)
 	return i, err
 }

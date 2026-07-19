@@ -62,8 +62,10 @@ export interface Initiative {
 export interface Task {
   id: string;
   initiative_id: string;
+  ladder_id: string;
   title: string;
   execution?: string;
+  impact_summary?: string;
   progress_percentage: number;
   completed_at?: string;
   created_at: string;

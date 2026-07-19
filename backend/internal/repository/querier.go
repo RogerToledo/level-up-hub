@@ -16,15 +16,16 @@ type Querier interface {
 	CountAllUsers(ctx context.Context) (int64, error)
 	CountUserInitiatives(ctx context.Context, userID uuid.UUID) (int64, error)
 	CreateInitiative(ctx context.Context, arg CreateInitiativeParams) (Initiative, error)
-	CreateInitiativePillar(ctx context.Context, arg CreateInitiativePillarParams) (InitiativePillar, error)
 	CreateLadderLevel(ctx context.Context, arg CreateLadderLevelParams) (CareerLadder, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateTaskEvidence(ctx context.Context, arg CreateTaskEvidenceParams) (TaskEvidence, error)
+	CreateTaskPillar(ctx context.Context, arg CreateTaskPillarParams) (TaskPillar, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	DeleteInitiative(ctx context.Context, arg DeleteInitiativeParams) error
 	DeleteLadderLevel(ctx context.Context, id uuid.UUID) error
 	DeleteTask(ctx context.Context, id uuid.UUID) error
 	DeleteTaskEvidence(ctx context.Context, id uuid.UUID) error
+	DeleteTaskPillars(ctx context.Context, taskID uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	FindAllUsers(ctx context.Context) ([]FindAllUsersRow, error)
 	FindAllUsersPaginated(ctx context.Context, arg FindAllUsersPaginatedParams) ([]FindAllUsersPaginatedRow, error)
@@ -34,24 +35,20 @@ type Querier interface {
 	FindGapAnalysis(ctx context.Context, arg FindGapAnalysisParams) ([]FindGapAnalysisRow, error)
 	FindInitiativeByID(ctx context.Context, arg FindInitiativeByIDParams) (FindInitiativeByIDRow, error)
 	FindInitiativeComposition(ctx context.Context, userID uuid.UUID) ([]FindInitiativeCompositionRow, error)
-	FindInitiativeDetail(ctx context.Context, arg FindInitiativeDetailParams) (FindInitiativeDetailRow, error)
-	FindInitiativeWithLadder(ctx context.Context, arg FindInitiativeWithLadderParams) (FindInitiativeWithLadderRow, error)
 	FindLadderByLevel(ctx context.Context, level LadderLevel) (CareerLadder, error)
 	FindLadderLevel(ctx context.Context, id uuid.UUID) (CareerLadder, error)
 	FindPdiDashboard(ctx context.Context, userID uuid.UUID) ([]FindPdiDashboardRow, error)
 	FindPerformanceByPeriod(ctx context.Context, arg FindPerformanceByPeriodParams) ([]FindPerformanceByPeriodRow, error)
 	FindPreviousCycle(ctx context.Context, endDate pgtype.Date) (EvaluationCycle, error)
-	FindTaskByID(ctx context.Context, id uuid.UUID) (Task, error)
+	FindTaskByID(ctx context.Context, id uuid.UUID) (FindTaskByIDRow, error)
 	FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error)
 	FindUserByID(ctx context.Context, id uuid.UUID) (FindUserByIDRow, error)
-	FindUserInitiatives(ctx context.Context, userID uuid.UUID) ([]FindUserInitiativesRow, error)
+	GetTaskPillars(ctx context.Context, taskID uuid.UUID) ([]Pillar, error)
 	ListEntireLadder(ctx context.Context) ([]CareerLadder, error)
 	ListEvidencesByTask(ctx context.Context, taskID uuid.UUID) ([]TaskEvidence, error)
 	ListTasksByInitiative(ctx context.Context, initiativeID uuid.UUID) ([]ListTasksByInitiativeRow, error)
 	ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]ListUserInitiativesRow, error)
-	ListUserInitiativesPaginated(ctx context.Context, arg ListUserInitiativesPaginatedParams) ([]ListUserInitiativesPaginatedRow, error)
 	UpdateInitiative(ctx context.Context, arg UpdateInitiativeParams) (Initiative, error)
-	UpdateInitiativeProgress(ctx context.Context, arg UpdateInitiativeProgressParams) (Initiative, error)
 	UpdateLadderLevel(ctx context.Context, arg UpdateLadderLevelParams) error
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
