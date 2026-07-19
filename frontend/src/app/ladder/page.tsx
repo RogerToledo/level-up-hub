@@ -16,6 +16,90 @@ const emptyForm: CreateCareerLadderRequest = {
   leadership_scope: "",
 };
 
+function LadderCard({
+  ladder,
+  isAdmin,
+  onEdit,
+  onDelete,
+}: {
+  ladder: CareerLadder;
+  isAdmin: boolean;
+  onEdit: (l: CareerLadder) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <span className="px-3 py-1 bg-blue-900 text-blue-300 text-sm font-semibold rounded-full">
+            {ladder.level}
+          </span>
+          <span className="text-sm text-white font-medium">{ladder.xp_reward} XP</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all flex items-center gap-1"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {expanded ? "Ocultar" : "Ver detalhes"}
+          </button>
+
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => onEdit(ladder)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-all"
+                title="Editar"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => onDelete(ladder.id)}
+                className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all"
+                title="Deletar"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-700 px-6 py-4 grid gap-4 md:grid-cols-3">
+          <div>
+            <h4 className="text-xs font-medium text-gray-400 uppercase mb-1">Competencias Tecnicas</h4>
+            <p className="text-sm text-gray-200 whitespace-pre-wrap">{ladder.technical}</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-medium text-gray-400 uppercase mb-1">Resultados Esperados</h4>
+            <p className="text-sm text-gray-200 whitespace-pre-wrap">{ladder.expected_results}</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-medium text-gray-400 uppercase mb-1">Escopo de Lideranca</h4>
+            <p className="text-sm text-gray-200 whitespace-pre-wrap">{ladder.leadership_scope}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LadderPage() {
   const [ladders, setLadders] = useState<CareerLadder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -280,78 +364,16 @@ export default function LadderPage() {
             )}
           </div>
         ) : (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Nivel
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    XP
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Tecnico
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Resultados
-                  </th>
-                  {isAdmin && (
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Acoes
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {ladders.map((ladder) => (
-                  <tr key={ladder.id} className="hover:bg-gray-750 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 bg-blue-900 text-blue-300 text-sm font-semibold rounded-full">
-                        {ladder.level}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-white font-medium">{ladder.xp_reward} XP</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-300 truncate max-w-xs" title={ladder.technical}>
-                        {ladder.technical}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-300 truncate max-w-xs" title={ladder.expected_results}>
-                        {ladder.expected_results}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {isAdmin && (
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEditClick(ladder)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-all"
-                            title="Editar"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(ladder.id)}
-                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all"
-                            title="Deletar"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-4">
+            {ladders.map((ladder) => (
+              <LadderCard
+                key={ladder.id}
+                ladder={ladder}
+                isAdmin={isAdmin}
+                onEdit={handleEditClick}
+                onDelete={handleDelete}
+              />
+            ))}
           </div>
         )}
       </main>
