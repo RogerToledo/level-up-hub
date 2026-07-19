@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/services/api";
+import { useToast } from "@/components/Toast";
 import { CareerLadder, LadderLevel, CreateCareerLadderRequest } from "@/types";
 
 const LADDER_LEVELS: LadderLevel[] = ["P1", "P2", "P3", "LT1", "LT2", "LT3", "LT4"];
@@ -101,6 +102,7 @@ function LadderCard({
 }
 
 export default function LadderPage() {
+  const { toast } = useToast();
   const [ladders, setLadders] = useState<CareerLadder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -138,7 +140,7 @@ export default function LadderPage() {
     e.preventDefault();
 
     if (!formData.technical.trim() || !formData.expected_results.trim() || !formData.leadership_scope.trim()) {
-      alert("Preencha todos os campos obrigatórios");
+      toast("Preencha todos os campos obrigatorios", "warning");
       return;
     }
 
@@ -148,9 +150,10 @@ export default function LadderPage() {
       setFormData(emptyForm);
       setShowModal(false);
       fetchLadders();
+      toast("Nivel criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar nível:", error);
-      alert("Erro ao criar nível. Tente novamente.");
+      toast("Erro ao criar nivel. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -173,7 +176,7 @@ export default function LadderPage() {
     if (!editingLadder) return;
 
     if (!editFormData.technical.trim() || !editFormData.expected_results.trim() || !editFormData.leadership_scope.trim()) {
-      alert("Preencha todos os campos obrigatórios");
+      toast("Preencha todos os campos obrigatorios", "warning");
       return;
     }
 
@@ -183,9 +186,10 @@ export default function LadderPage() {
       setShowEditModal(false);
       setEditingLadder(null);
       fetchLadders();
+      toast("Nivel atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar nível:", error);
-      alert("Erro ao atualizar nível. Tente novamente.");
+      toast("Erro ao atualizar nivel. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -197,9 +201,10 @@ export default function LadderPage() {
     try {
       await api.delete(`/ladder/${id}`);
       setLadders(ladders.filter((l) => l.id !== id));
+      toast("Nivel deletado com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar:", error);
-      alert("Erro ao deletar nível. Verifique se não há dependências.");
+      toast("Erro ao deletar nivel. Verifique se nao ha dependencias.", "error");
     }
   };
 

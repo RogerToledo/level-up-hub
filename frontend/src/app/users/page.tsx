@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/services/api";
+import { useToast } from "@/components/Toast";
 
 interface User {
   id: string;
@@ -21,6 +22,7 @@ interface UserForm {
 }
 
 export default function UsersPage() {
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -76,10 +78,10 @@ export default function UsersPage() {
     try {
       await api.delete(`/users/${id}`);
       setUsers(users.filter(u => u.id !== id));
-      alert("Usuário deletado com sucesso!");
+      toast("Usuario deletado com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar:", error);
-      alert("Erro ao deletar usuário");
+      toast("Erro ao deletar usuario", "error");
     }
   };
 
@@ -99,7 +101,7 @@ export default function UsersPage() {
     if (!editingUser) return;
 
     if (!editFormData.username.trim() || !editFormData.email.trim()) {
-      alert("Nome de usuário e email são obrigatórios");
+      toast("Nome de usuario e email sao obrigatorios", "warning");
       return;
     }
 
@@ -116,10 +118,10 @@ export default function UsersPage() {
       await fetchUsers();
       setShowEditModal(false);
       setEditingUser(null);
-      alert("Usuário atualizado com sucesso!");
+      toast("Usuario atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar usuário:", error);
-      alert("Erro ao atualizar usuário. Tente novamente.");
+      toast("Erro ao atualizar usuario. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +131,7 @@ export default function UsersPage() {
     e.preventDefault();
     
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-      alert("Preencha todos os campos obrigatórios");
+      toast("Preencha todos os campos obrigatorios", "warning");
       return;
     }
 
@@ -153,10 +155,10 @@ export default function UsersPage() {
       
       setShowModal(false);
       fetchUsers();
-      alert("Usuário criado com sucesso!");
+      toast("Usuario criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
-      alert("Erro ao criar usuário. Tente novamente.");
+      toast("Erro ao criar usuario. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }

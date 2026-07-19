@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/services/api";
+import { useToast } from "@/components/Toast";
 import type { GapAnalysisResponse, CareerRadar, ComparisonReport } from "@/types";
 
 export default function ReportsPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"detailed" | "gap" | "radar" | "comparison">("detailed");
   const [gapData, setGapData] = useState<GapAnalysisResponse[]>([]);
   const [radarData, setRadarData] = useState<CareerRadar | null>(null);
@@ -120,7 +122,7 @@ export default function ReportsPage() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Erro ao baixar PDF:', error);
-      alert('Erro ao baixar relatório em PDF');
+      toast('Erro ao baixar relatorio em PDF', 'error');
     }
   };
 
@@ -139,10 +141,10 @@ export default function ReportsPage() {
     try {
       setSendingToManager(true);
       const response = await api.post('/report/send-to-manager', {});
-      alert(response.message || 'Relatório enviado com sucesso!');
+      toast(response.message || 'Relatorio enviado com sucesso!');
     } catch (error: any) {
       console.error('Erro ao enviar relatório:', error);
-      alert(error.message || 'Erro ao enviar relatório para o gerente');
+      toast(error.message || 'Erro ao enviar relatorio para o gerente', 'error');
     } finally {
       setSendingToManager(false);
     }

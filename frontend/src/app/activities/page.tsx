@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import PageHeader from "@/components/PageHeader";
 import { api } from "@/services/api";
+import { useToast } from "@/components/Toast";
 import { Pillar } from "@/types";
 
 interface Activity {
@@ -41,6 +42,7 @@ interface ActivityForm {
 }
 
 export default function ActivitiesPage() {
+  const { toast } = useToast();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [ladders, setLadders] = useState<Ladder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export default function ActivitiesPage() {
       setActivities(activities.filter(a => a.id !== id));
     } catch (error) {
       console.error("Erro ao deletar:", error);
-      alert("Erro ao deletar atividade");
+      toast("Erro ao deletar atividade", "error");
     }
   };
 
@@ -182,7 +184,7 @@ export default function ActivitiesPage() {
     if (!editingActivity) return;
 
     if (!editFormData.title.trim()) {
-      alert("O título é obrigatório");
+      toast("O titulo e obrigatorio", "warning");
       return;
     }
 
@@ -203,10 +205,10 @@ export default function ActivitiesPage() {
 
       setShowEditModal(false);
       setEditingActivity(null);
-      alert("Atividade atualizada com sucesso!");
+      toast("Atividade atualizada com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar atividade:", error);
-      alert("Erro ao atualizar atividade. Tente novamente.");
+      toast("Erro ao atualizar atividade. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -230,7 +232,7 @@ export default function ActivitiesPage() {
     if (!selectedActivityForEvidence) return;
 
     if (!evidenceForm.url.trim()) {
-      alert("A URL é obrigatória");
+      toast("A URL e obrigatoria", "warning");
       return;
     }
 
@@ -238,7 +240,7 @@ export default function ActivitiesPage() {
     try {
       new URL(evidenceForm.url);
     } catch {
-      alert("Por favor, insira uma URL válida");
+      toast("Por favor, insira uma URL valida", "warning");
       return;
     }
 
@@ -257,10 +259,10 @@ export default function ActivitiesPage() {
       await fetchActivities();
 
       setEvidenceForm({ url: "", description: "" });
-      alert("Evidência adicionada com sucesso!");
+      toast("Evidencia adicionada com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar evidência:", error);
-      alert("Erro ao adicionar evidência. Tente novamente.");
+      toast("Erro ao adicionar evidencia. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -270,7 +272,7 @@ export default function ActivitiesPage() {
     e.preventDefault();
     
     if (!formData.title || formData.pillars.length === 0 || !formData.ladder_id) {
-      alert("Preencha os campos obrigatórios: Título, Pilares e Nível");
+      toast("Preencha os campos obrigatorios: Titulo, Pilares e Nivel", "warning");
       return;
     }
 
@@ -279,7 +281,7 @@ export default function ActivitiesPage() {
     try {
       const userId = localStorage.getItem("user_id");
       if (!userId) {
-        alert("Usuário não identificado. Faça login novamente.");
+        toast("Usuario nao identificado. Faca login novamente.", "error");
         return;
       }
 
@@ -309,10 +311,10 @@ export default function ActivitiesPage() {
       
       setShowModal(false);
       fetchActivities();
-      alert("Atividade criada com sucesso!");
+      toast("Atividade criada com sucesso!");
     } catch (error) {
       console.error("Erro ao criar atividade:", error);
-      alert("Erro ao criar atividade. Tente novamente.");
+      toast("Erro ao criar atividade. Tente novamente.", "error");
     } finally {
       setSubmitting(false);
     }
