@@ -23,6 +23,8 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
+  const [targetLevel, setTargetLevel] = useState("");
+  const [savingTarget, setSavingTarget] = useState(false);
   
   const [formData, setFormData] = useState<UpdateProfileRequest>({
     username: "",
@@ -67,6 +69,16 @@ export default function ProfilePage() {
           manager_name: userData.manager_name || "",
           manager_email: userData.manager_email || "",
         });
+
+        // Load target level
+        try {
+          const target = await api.get("/level-target");
+          if (target && target.target) {
+            setTargetLevel(target.target);
+          }
+        } catch {
+          // No target set yet
+        }
       }
     } catch (err: any) {
       console.error("Erro ao carregar perfil:", err);
@@ -128,6 +140,20 @@ export default function ProfilePage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveTarget = async (level: string) => {
+    setSavingTarget(true);
+    try {
+      await api.post("/level-target", { target: level, year: new Date().getFullYear() });
+      setTargetLevel(level);
+      setSuccess("Nivel alvo atualizado!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Erro ao salvar nivel alvo");
+    } finally {
+      setSavingTarget(false);
+    }
   };
 
   if (loading) {
@@ -247,6 +273,42 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Nível Alvo */}
+            <div className="bg-gray-900 rounded-lg shadow-sm border border-gray-800 p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Nivel Alvo {new Date().getFullYear()}
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Qual nivel voce quer alcançar este ano?
+                </p>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                {["P1", "P2", "P3", "LT1", "LT2", "LT3", "LT4"].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    disabled={savingTarget}
+                    onClick={() => handleSaveTarget(level)}
+                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      targetLevel === level
+                        ? "bg-blue-600 border-blue-500 text-white"
+                        : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500"
+                    } disabled:opacity-50`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+
+              {targetLevel && (
+                <p className="mt-3 text-sm text-gray-400">
+                  Seu objetivo para {new Date().getFullYear()}: <span className="text-blue-400 font-medium">{targetLevel}</span>
+                </p>
+              )}
             </div>
 
             {/* Informações do Gerente */}
