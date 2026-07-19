@@ -9,95 +9,106 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createLevelTarget = `-- name: CreateLevelTarget :one
-INSERT INTO level_target (target, year)
-VALUES ($1, $2)
-RETURNING id, year, target
+INSERT INTO level_target (user_id, target, year)
+VALUES ($1, $2, $3)
+RETURNING id, year, target, user_id
 `
 
 type CreateLevelTargetParams struct {
+	UserID pgtype.UUID `json:"user_id"`
 	Target LadderLevel `json:"target"`
 	Year   int32       `json:"year"`
 }
 
 func (q *Queries) CreateLevelTarget(ctx context.Context, arg CreateLevelTargetParams) (LevelTarget, error) {
-	row := q.db.QueryRow(ctx, createLevelTarget, arg.Target, arg.Year)
+	row := q.db.QueryRow(ctx, createLevelTarget, arg.UserID, arg.Target, arg.Year)
 	var i LevelTarget
-	err := row.Scan(&i.ID, &i.Year, &i.Target)
+	err := row.Scan(
+		&i.ID,
+		&i.Year,
+		&i.Target,
+		&i.UserID,
+	)
 	return i, err
 }
 
 const deleteLevelTarget = `-- name: DeleteLevelTarget :exec
-DELETE FROM level_target WHERE id = $1
+DELETE FROM level_target WHERE id = $1 AND user_id = $2
 `
 
-func (q *Queries) DeleteLevelTarget(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteLevelTarget, id)
+type DeleteLevelTargetParams struct {
+	ID     uuid.UUID   `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) DeleteLevelTarget(ctx context.Context, arg DeleteLevelTargetParams) error {
+	_, err := q.db.Exec(ctx, deleteLevelTarget, arg.ID, arg.UserID)
 	return err
 }
 
-const findLevelTargetByID = `-- name: FindLevelTargetByID :one
-SELECT id, target, year
+const findLevelTargetByUserAndYear = `-- name: FindLevelTargetByUserAndYear :one
+SELECT id, user_id, target, year
 FROM level_target
-WHERE id = $1
+WHERE user_id = $1 AND year = $2
 `
 
-type FindLevelTargetByIDRow struct {
+type FindLevelTargetByUserAndYearParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Year   int32       `json:"year"`
+}
+
+type FindLevelTargetByUserAndYearRow struct {
 	ID     uuid.UUID   `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
 	Target LadderLevel `json:"target"`
 	Year   int32       `json:"year"`
 }
 
-func (q *Queries) FindLevelTargetByID(ctx context.Context, id uuid.UUID) (FindLevelTargetByIDRow, error) {
-	row := q.db.QueryRow(ctx, findLevelTargetByID, id)
-	var i FindLevelTargetByIDRow
-	err := row.Scan(&i.ID, &i.Target, &i.Year)
+func (q *Queries) FindLevelTargetByUserAndYear(ctx context.Context, arg FindLevelTargetByUserAndYearParams) (FindLevelTargetByUserAndYearRow, error) {
+	row := q.db.QueryRow(ctx, findLevelTargetByUserAndYear, arg.UserID, arg.Year)
+	var i FindLevelTargetByUserAndYearRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Target,
+		&i.Year,
+	)
 	return i, err
 }
 
-const findLevelTargetByYear = `-- name: FindLevelTargetByYear :one
-SELECT id, target, year
+const listLevelTargetsByUser = `-- name: ListLevelTargetsByUser :many
+SELECT id, user_id, target, year
 FROM level_target
-WHERE year = $1
-`
-
-type FindLevelTargetByYearRow struct {
-	ID     uuid.UUID   `json:"id"`
-	Target LadderLevel `json:"target"`
-	Year   int32       `json:"year"`
-}
-
-func (q *Queries) FindLevelTargetByYear(ctx context.Context, year int32) (FindLevelTargetByYearRow, error) {
-	row := q.db.QueryRow(ctx, findLevelTargetByYear, year)
-	var i FindLevelTargetByYearRow
-	err := row.Scan(&i.ID, &i.Target, &i.Year)
-	return i, err
-}
-
-const listLevelTargets = `-- name: ListLevelTargets :many
-SELECT id, target, year
-FROM level_target
+WHERE user_id = $1
 ORDER BY year DESC
 `
 
-type ListLevelTargetsRow struct {
+type ListLevelTargetsByUserRow struct {
 	ID     uuid.UUID   `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
 	Target LadderLevel `json:"target"`
 	Year   int32       `json:"year"`
 }
 
-func (q *Queries) ListLevelTargets(ctx context.Context) ([]ListLevelTargetsRow, error) {
-	rows, err := q.db.Query(ctx, listLevelTargets)
+func (q *Queries) ListLevelTargetsByUser(ctx context.Context, userID pgtype.UUID) ([]ListLevelTargetsByUserRow, error) {
+	rows, err := q.db.Query(ctx, listLevelTargetsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListLevelTargetsRow
+	var items []ListLevelTargetsByUserRow
 	for rows.Next() {
-		var i ListLevelTargetsRow
-		if err := rows.Scan(&i.ID, &i.Target, &i.Year); err != nil {
+		var i ListLevelTargetsByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Target,
+			&i.Year,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -108,22 +119,27 @@ func (q *Queries) ListLevelTargets(ctx context.Context) ([]ListLevelTargetsRow, 
 	return items, nil
 }
 
-const updateLevelTarget = `-- name: UpdateLevelTarget :one
-UPDATE level_target
-SET target = $2, year = $3
-WHERE id = $1
-RETURNING id, year, target
+const upsertLevelTarget = `-- name: UpsertLevelTarget :one
+INSERT INTO level_target (user_id, target, year)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id, year) DO UPDATE SET target = $2
+RETURNING id, year, target, user_id
 `
 
-type UpdateLevelTargetParams struct {
-	ID     uuid.UUID   `json:"id"`
+type UpsertLevelTargetParams struct {
+	UserID pgtype.UUID `json:"user_id"`
 	Target LadderLevel `json:"target"`
 	Year   int32       `json:"year"`
 }
 
-func (q *Queries) UpdateLevelTarget(ctx context.Context, arg UpdateLevelTargetParams) (LevelTarget, error) {
-	row := q.db.QueryRow(ctx, updateLevelTarget, arg.ID, arg.Target, arg.Year)
+func (q *Queries) UpsertLevelTarget(ctx context.Context, arg UpsertLevelTargetParams) (LevelTarget, error) {
+	row := q.db.QueryRow(ctx, upsertLevelTarget, arg.UserID, arg.Target, arg.Year)
 	var i LevelTarget
-	err := row.Scan(&i.ID, &i.Year, &i.Target)
+	err := row.Scan(
+		&i.ID,
+		&i.Year,
+		&i.Target,
+		&i.UserID,
+	)
 	return i, err
 }

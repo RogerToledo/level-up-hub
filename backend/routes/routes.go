@@ -117,9 +117,11 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/ladders", cfg.LadderHandler.List)
 	protected.GET("/ladder/:id", cfg.LadderHandler.FindByID)
 
-	// Level targets (read for all users)
-	protected.GET("/level-targets", cfg.LevelTargetHandler.List)
-	protected.GET("/level-targets/:id", cfg.LevelTargetHandler.FindByID)
+	// Level targets (user-scoped)
+	protected.POST("/level-target", cfg.LevelTargetHandler.SetTarget)
+	protected.GET("/level-target", cfg.LevelTargetHandler.GetTarget)
+	protected.GET("/level-targets", cfg.LevelTargetHandler.ListTargets)
+	protected.DELETE("/level-targets/:id", cfg.LevelTargetHandler.DeleteTarget)
 
 	// Admin-only routes
 	admin := protected.Group("/")
@@ -132,10 +134,6 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.POST("/ladder", cfg.LadderHandler.Create)
 	admin.PUT("/ladder/:id", cfg.LadderHandler.Update)
 	admin.DELETE("/ladder/:id", cfg.LadderHandler.Delete)
-
-	admin.POST("/level-targets", cfg.LevelTargetHandler.Create)
-	admin.PUT("/level-targets/:id", cfg.LevelTargetHandler.Update)
-	admin.DELETE("/level-targets/:id", cfg.LevelTargetHandler.Delete)
 
 	return r
 }

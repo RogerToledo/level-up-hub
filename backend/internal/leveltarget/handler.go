@@ -1,8 +1,9 @@
 package leveltarget
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/backend/apperr"
@@ -21,85 +22,104 @@ func NewHandler(s *Service, cfg *config.Config) *Handler {
 	return &Handler{service: s, cfg: cfg}
 }
 
-func (h *Handler) Create(c *gin.Context) {
-	var input repository.CreateLevelTargetParams
+// SetTarget sets or updates the user's target level for a given year
+func (h *Handler) SetTarget(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	var input struct {
+		Target repository.LadderLevel `json:"target" binding:"required"`
+		Year   int32                  `json:"year"`
+	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
-	lt, err := h.service.Create(c.Request.Context(), input)
+	// Default to current year if not provided
+	if input.Year == 0 {
+		input.Year = int32(time.Now().Year())
+	}
+
+	lt, err := h.service.Upsert(c.Request.Context(), userID, input.Target, input.Year)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
-		return
-	}
-
-	rest.Send(c.Writer, lt, http.StatusCreated)
-}
-
-func (h *Handler) FindByID(c *gin.Context) {
-	id, err := identity.ValidateIDParam(c)
-	if err != nil {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
-		return
-	}
-
-	lt, err := h.service.FindByID(c.Request.Context(), id)
-	if err != nil {
-		rest.Error(c.Writer, http.StatusNotFound, fmt.Sprintf(apperr.ErrIsNotFound, "meta de nivel"), nil)
 		return
 	}
 
 	rest.Send(c.Writer, lt, http.StatusOK)
 }
 
-func (h *Handler) List(c *gin.Context) {
-	targets, err := h.service.List(c.Request.Context())
+// GetTarget returns the user's target for a given year (defaults to current year)
+func (h *Handler) GetTarget(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	yearStr := c.Query("year")
+	year := int32(time.Now().Year())
+	if yearStr != "" {
+		y, err := strconv.Atoi(yearStr)
+		if err != nil {
+			rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+			return
+		}
+		year = int32(y)
+	}
+
+	lt, err := h.service.FindByUserAndYear(c.Request.Context(), userID, year)
+	if err != nil {
+		// No target set yet — return empty
+		rest.Send(c.Writer, nil, http.StatusOK)
+		return
+	}
+
+	rest.Send(c.Writer, lt, http.StatusOK)
+}
+
+// ListTargets returns all targets for the authenticated user
+func (h *Handler) ListTargets(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
+	targets, err := h.service.ListByUser(c.Request.Context(), userID)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 	if targets == nil {
-		targets = []repository.ListLevelTargetsRow{}
+		targets = []repository.ListLevelTargetsByUserRow{}
 	}
 
 	rest.Send(c.Writer, targets, http.StatusOK)
 }
 
-func (h *Handler) Update(c *gin.Context) {
+// DeleteTarget removes a target for the authenticated user
+func (h *Handler) DeleteTarget(c *gin.Context) {
+	userID, err := identity.GetUserIDFromContext(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusUnauthorized, apperr.ErrUnauthorized, err)
+		return
+	}
+
 	id, err := identity.ValidateIDParam(c)
 	if err != nil {
 		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
 		return
 	}
 
-	var input repository.UpdateLevelTargetParams
-	if err := c.ShouldBindJSON(&input); err != nil {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
-		return
-	}
-	input.ID = id
-
-	lt, err := h.service.Update(c.Request.Context(), input)
-	if err != nil {
+	if err := h.service.Delete(c.Request.Context(), id, userID); err != nil {
 		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
 		return
 	}
 
-	rest.Send(c.Writer, lt, http.StatusOK)
-}
-
-func (h *Handler) Delete(c *gin.Context) {
-	id, err := identity.ValidateIDParam(c)
-	if err != nil {
-		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
-		return
-	}
-
-	if err := h.service.Delete(c.Request.Context(), id); err != nil {
-		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
-		return
-	}
-
-	rest.Send(c.Writer, fmt.Sprintf(apperr.OkDelete, "meta de nivel"), http.StatusOK)
+	c.Status(http.StatusNoContent)
 }

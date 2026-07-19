@@ -82,17 +82,22 @@ SELECT
     cl.id as ladder_id
 FROM level_target lt
 JOIN career_ladder cl ON cl.level = lt.target
-WHERE lt.year = $1
+WHERE lt.user_id = $1 AND lt.year = $2
 LIMIT 1
 `
+
+type FindCurrentTargetLevelParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Year   int32       `json:"year"`
+}
 
 type FindCurrentTargetLevelRow struct {
 	Level    LadderLevel `json:"level"`
 	LadderID uuid.UUID   `json:"ladder_id"`
 }
 
-func (q *Queries) FindCurrentTargetLevel(ctx context.Context, year int32) (FindCurrentTargetLevelRow, error) {
-	row := q.db.QueryRow(ctx, findCurrentTargetLevel, year)
+func (q *Queries) FindCurrentTargetLevel(ctx context.Context, arg FindCurrentTargetLevelParams) (FindCurrentTargetLevelRow, error) {
+	row := q.db.QueryRow(ctx, findCurrentTargetLevel, arg.UserID, arg.Year)
 	var i FindCurrentTargetLevelRow
 	err := row.Scan(&i.Level, &i.LadderID)
 	return i, err

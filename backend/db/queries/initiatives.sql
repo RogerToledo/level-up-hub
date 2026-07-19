@@ -122,5 +122,5 @@ SELECT
     cl.id as ladder_id
 FROM level_target lt
 JOIN career_ladder cl ON cl.level = lt.target
-WHERE lt.year = $1
+WHERE lt.user_id = $1 AND lt.year = $2
 LIMIT 1;

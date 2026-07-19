@@ -1,28 +1,24 @@
 -- name: CreateLevelTarget :one
-INSERT INTO level_target (target, year)
-VALUES ($1, $2)
+INSERT INTO level_target (user_id, target, year)
+VALUES ($1, $2, $3)
 RETURNING *;
 
--- name: FindLevelTargetByID :one
-SELECT id, target, year
+-- name: FindLevelTargetByUserAndYear :one
+SELECT id, user_id, target, year
 FROM level_target
-WHERE id = $1;
+WHERE user_id = $1 AND year = $2;
 
--- name: FindLevelTargetByYear :one
-SELECT id, target, year
+-- name: ListLevelTargetsByUser :many
+SELECT id, user_id, target, year
 FROM level_target
-WHERE year = $1;
-
--- name: ListLevelTargets :many
-SELECT id, target, year
-FROM level_target
+WHERE user_id = $1
 ORDER BY year DESC;
 
--- name: UpdateLevelTarget :one
-UPDATE level_target
-SET target = $2, year = $3
-WHERE id = $1
+-- name: UpsertLevelTarget :one
+INSERT INTO level_target (user_id, target, year)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id, year) DO UPDATE SET target = $2
 RETURNING *;
 
 -- name: DeleteLevelTarget :exec
-DELETE FROM level_target WHERE id = $1;
+DELETE FROM level_target WHERE id = $1 AND user_id = $2;

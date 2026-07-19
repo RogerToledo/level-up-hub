@@ -177,6 +177,7 @@ type LevelTarget struct {
 	ID     uuid.UUID   `json:"id"`
 	Year   int32       `json:"year"`
 	Target LadderLevel `json:"target"`
+	UserID pgtype.UUID `json:"user_id"`
 }
 
 type Task struct {
