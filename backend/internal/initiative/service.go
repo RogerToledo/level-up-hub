@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/me/level-up-hub/backend/apperr"
 	"github.com/me/level-up-hub/backend/internal/repository"
@@ -61,6 +63,17 @@ func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*Da
 		return nil, err
 	}
 
+	// Fetch user's target level for current year
+	currentYear := int32(time.Now().Year())
+	var targetLevel repository.LadderLevel
+	targetRow, err := s.repo.FindCurrentTargetLevel(ctx, repository.FindCurrentTargetLevelParams{
+		UserID: pgtype.UUID{Bytes: userID, Valid: true},
+		Year:   currentYear,
+	})
+	if err == nil {
+		targetLevel = targetRow.Level
+	}
+
 	rows, err := s.repo.FindPdiDashboard(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -68,16 +81,12 @@ func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*Da
 
 	resp := &DashboardResponse{
 		OfficialLevel: user.CurrentLevel,
+		TargetLevel:   targetLevel,
 		PdiProgress:   make(map[string]PillarStats),
 		Overdelivery:  make(map[string]int32),
 	}
 
-	var highestTarget repository.LadderLevel = ""
 	for _, row := range rows {
-		if string(row.Level) > string(highestTarget) {
-			highestTarget = row.Level
-		}
-
 		percentage := float64(0)
 		if row.TotalPdiPlanned > 0 {
 			percentage = (float64(row.TotalAchieved) / float64(row.TotalPdiPlanned)) * 100
@@ -94,7 +103,6 @@ func (s *Service) GetCareerDashboard(ctx context.Context, userID uuid.UUID) (*Da
 		resp.Overdelivery[levelKey] += row.OverdeliveryXp
 	}
 
-	resp.TargetLevel = highestTarget
 	return resp, nil
 }
 
