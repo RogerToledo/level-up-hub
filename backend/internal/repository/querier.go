@@ -17,12 +17,14 @@ type Querier interface {
 	CountUserInitiatives(ctx context.Context, userID uuid.UUID) (int64, error)
 	CreateInitiative(ctx context.Context, arg CreateInitiativeParams) (Initiative, error)
 	CreateLadderLevel(ctx context.Context, arg CreateLadderLevelParams) (CareerLadder, error)
+	CreateLevelTarget(ctx context.Context, arg CreateLevelTargetParams) (LevelTarget, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateTaskEvidence(ctx context.Context, arg CreateTaskEvidenceParams) (TaskEvidence, error)
 	CreateTaskPillar(ctx context.Context, arg CreateTaskPillarParams) (TaskPillar, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	DeleteInitiative(ctx context.Context, arg DeleteInitiativeParams) error
 	DeleteLadderLevel(ctx context.Context, id uuid.UUID) error
+	DeleteLevelTarget(ctx context.Context, id uuid.UUID) error
 	DeleteTask(ctx context.Context, id uuid.UUID) error
 	DeleteTaskEvidence(ctx context.Context, id uuid.UUID) error
 	DeleteTaskPillars(ctx context.Context, taskID uuid.UUID) error
@@ -37,6 +39,8 @@ type Querier interface {
 	FindInitiativeComposition(ctx context.Context, userID uuid.UUID) ([]FindInitiativeCompositionRow, error)
 	FindLadderByLevel(ctx context.Context, level LadderLevel) (CareerLadder, error)
 	FindLadderLevel(ctx context.Context, id uuid.UUID) (CareerLadder, error)
+	FindLevelTargetByID(ctx context.Context, id uuid.UUID) (FindLevelTargetByIDRow, error)
+	FindLevelTargetByYear(ctx context.Context, year int32) (FindLevelTargetByYearRow, error)
 	FindPdiDashboard(ctx context.Context, userID uuid.UUID) ([]FindPdiDashboardRow, error)
 	FindPerformanceByPeriod(ctx context.Context, arg FindPerformanceByPeriodParams) ([]FindPerformanceByPeriodRow, error)
 	FindPreviousCycle(ctx context.Context, endDate pgtype.Date) (EvaluationCycle, error)
@@ -46,11 +50,13 @@ type Querier interface {
 	GetTaskPillars(ctx context.Context, taskID uuid.UUID) ([]Pillar, error)
 	ListEntireLadder(ctx context.Context) ([]CareerLadder, error)
 	ListEvidencesByTask(ctx context.Context, taskID uuid.UUID) ([]TaskEvidence, error)
+	ListLevelTargets(ctx context.Context) ([]ListLevelTargetsRow, error)
 	ListTasksByInitiative(ctx context.Context, initiativeID uuid.UUID) ([]ListTasksByInitiativeRow, error)
 	ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]ListUserInitiativesRow, error)
 	UpdateInitiative(ctx context.Context, arg UpdateInitiativeParams) (Initiative, error)
 	UpdateLadderLevel(ctx context.Context, arg UpdateLadderLevelParams) error
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
+	UpdateLevelTarget(ctx context.Context, arg UpdateLevelTargetParams) (LevelTarget, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 }

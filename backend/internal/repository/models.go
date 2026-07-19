@@ -173,6 +173,12 @@ type Initiative struct {
 	UpdatedAt          pgtype.Date `json:"updated_at"`
 }
 
+type LevelTarget struct {
+	ID     uuid.UUID   `json:"id"`
+	Year   int32       `json:"year"`
+	Target LadderLevel `json:"target"`
+}
+
 type Task struct {
 	ID                 uuid.UUID   `json:"id"`
 	InitiativeID       uuid.UUID   `json:"initiative_id"`
@@ -213,11 +219,4 @@ type User struct {
 	ManagerName pgtype.Text `json:"manager_name"`
 	// Email address of the engineering manager for report distribution
 	ManagerEmail pgtype.Text `json:"manager_email"`
-}
-
-type XpTarget struct {
-	ID       uuid.UUID `json:"id"`
-	Target   int32     `json:"target"`
-	Year     int32     `json:"year"`
-	LadderID uuid.UUID `json:"ladder_id"`
 }

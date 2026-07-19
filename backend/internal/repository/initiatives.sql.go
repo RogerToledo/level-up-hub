@@ -78,11 +78,11 @@ func (q *Queries) DeleteInitiative(ctx context.Context, arg DeleteInitiativePara
 
 const findCurrentTargetLevel = `-- name: FindCurrentTargetLevel :one
 SELECT
-    cl.level,
+    lt.target as level,
     cl.id as ladder_id
-FROM xp_target xt
-JOIN career_ladder cl ON xt.ladder_id = cl.id
-WHERE xt.year = $1
+FROM level_target lt
+JOIN career_ladder cl ON cl.level = lt.target
+WHERE lt.year = $1
 LIMIT 1
 `
 

@@ -17,6 +17,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/email"
 	"github.com/me/level-up-hub/backend/internal/initiative"
 	"github.com/me/level-up-hub/backend/internal/ladder"
+	"github.com/me/level-up-hub/backend/internal/leveltarget"
 	"github.com/me/level-up-hub/backend/internal/logger"
 	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/me/level-up-hub/backend/internal/task"
@@ -80,6 +81,7 @@ func main() {
 	// Services
 	accountService := account.NewService(repo)
 	ladderService := ladder.NewService(repo)
+	levelTargetService := leveltarget.NewService(repo)
 	initiativeService := initiative.NewService(repo, dbPool)
 	taskService := task.NewService(repo, dbPool)
 	emailService := email.NewService(cfg)
@@ -87,14 +89,16 @@ func main() {
 	// Handlers
 	accountHandler := account.NewHandler(accountService, cfg)
 	ladderHandler := ladder.NewHandler(ladderService, cfg)
+	levelTargetHandler := leveltarget.NewHandler(levelTargetService, cfg)
 	initiativeHandler := initiative.NewHandler(initiativeService, cfg, emailService)
 	taskHandler := task.NewHandler(taskService, cfg)
 
 	r := routes.NewRouter(routes.RouterConfig{
-		UserHandler:       accountHandler,
-		LadderHandler:     ladderHandler,
-		InitiativeHandler: initiativeHandler,
-		TaskHandler:       taskHandler,
+		UserHandler:        accountHandler,
+		LadderHandler:      ladderHandler,
+		LevelTargetHandler: levelTargetHandler,
+		InitiativeHandler:  initiativeHandler,
+		TaskHandler:        taskHandler,
 	}, dbPool, cfg)
 
 	srv := &http.Server{

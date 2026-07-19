@@ -13,6 +13,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/database"
 	"github.com/me/level-up-hub/backend/internal/initiative"
 	"github.com/me/level-up-hub/backend/internal/ladder"
+	"github.com/me/level-up-hub/backend/internal/leveltarget"
 	"github.com/me/level-up-hub/backend/internal/task"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -20,10 +21,11 @@ import (
 )
 
 type RouterConfig struct {
-	UserHandler       *account.Handler
-	LadderHandler     *ladder.LadderHandler
-	InitiativeHandler *initiative.InitiativeHandler
-	TaskHandler       *task.TaskHandler
+	UserHandler        *account.Handler
+	LadderHandler      *ladder.LadderHandler
+	InitiativeHandler  *initiative.InitiativeHandler
+	TaskHandler        *task.TaskHandler
+	LevelTargetHandler *leveltarget.Handler
 }
 
 func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *gin.Engine {
@@ -115,6 +117,10 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/ladders", cfg.LadderHandler.List)
 	protected.GET("/ladder/:id", cfg.LadderHandler.FindByID)
 
+	// Level targets (read for all users)
+	protected.GET("/level-targets", cfg.LevelTargetHandler.List)
+	protected.GET("/level-targets/:id", cfg.LevelTargetHandler.FindByID)
+
 	// Admin-only routes
 	admin := protected.Group("/")
 	admin.Use(api.AdminOnly())
@@ -126,6 +132,10 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.POST("/ladder", cfg.LadderHandler.Create)
 	admin.PUT("/ladder/:id", cfg.LadderHandler.Update)
 	admin.DELETE("/ladder/:id", cfg.LadderHandler.Delete)
+
+	admin.POST("/level-targets", cfg.LevelTargetHandler.Create)
+	admin.PUT("/level-targets/:id", cfg.LevelTargetHandler.Update)
+	admin.DELETE("/level-targets/:id", cfg.LevelTargetHandler.Delete)
 
 	return r
 }
