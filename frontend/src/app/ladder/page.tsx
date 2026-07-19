@@ -121,11 +121,9 @@ export default function LadderPage() {
   const fetchLadders = async () => {
     try {
       const response = await api.get("/ladders");
-      console.log("[Ladder] Response type:", typeof response, "isArray:", Array.isArray(response), "value:", response);
       if (Array.isArray(response)) {
         setLadders(response);
       } else {
-        console.warn("[Ladder] Response is not an array, setting empty");
         setLadders([]);
       }
     } catch (error) {

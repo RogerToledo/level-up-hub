@@ -51,7 +51,6 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const response = await api.get("/users");
-      console.log("Users response:", response);
       
       // A resposta pode vir paginada: response.items ou diretamente como array
       if (Array.isArray(response)) {

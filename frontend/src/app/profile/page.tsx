@@ -49,7 +49,6 @@ export default function ProfilePage() {
         const token = localStorage.getItem("career_token");
         
         if (!userId || !token) {
-          console.warn("Usuário não está logado");
           router.push("/login");
           return;
         }

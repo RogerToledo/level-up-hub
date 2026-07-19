@@ -18,25 +18,18 @@ const getHeaders = () => {
     const token = localStorage.getItem("career_token");
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
-      console.log("[API] Token encontrado e adicionado aos headers");
-    } else {
-      console.warn("[API] Nenhum token encontrado no localStorage");
     }
   }
   return headers;
 };
 
 const handleResponse = async (response: Response) => {
-  // Log para debug
-  console.log(`[API] Response status: ${response.status} - ${response.url}`);
-
   const contentType = response.headers.get("content-type");
   const hasBody = contentType?.includes("application/json");
   const data = hasBody ? await response.json() : null;
   
   // Se o token for inválido, desloga o usuário
   if (response.status === 401) {
-    console.error("[API] Token inválido ou expirado");
     if (typeof window !== "undefined") {
       localStorage.removeItem("career_token");
       window.location.href = "/login";
@@ -46,7 +39,6 @@ const handleResponse = async (response: Response) => {
 
   if (!response.ok) {
     const errorMsg = data.error || data.message || "Erro na requisição";
-    console.error(`[API] Erro ${response.status}:`, errorMsg);
     throw new Error(errorMsg);
   }
   

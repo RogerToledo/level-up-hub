@@ -26,9 +26,7 @@ export default function DashboardPage() {
           return;
         }
 
-        console.log("Buscando dashboard com token:", token.substring(0, 20) + "...");
         const response = await api.get("/dashboard");
-        console.log("Dashboard carregado com sucesso:", response);
         setData(response);
       } catch (err: unknown) {
         console.error("Erro ao carregar dashboard:", err);

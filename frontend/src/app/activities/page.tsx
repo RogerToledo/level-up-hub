@@ -88,7 +88,6 @@ export default function ActivitiesPage() {
   const fetchActivities = async () => {
     try {
       const response = await api.get("/activities");
-      console.log("Activities response:", response);
       
       // A resposta pode vir paginada: response.items ou diretamente como array
       if (Array.isArray(response)) {
@@ -112,7 +111,6 @@ export default function ActivitiesPage() {
   const fetchLadders = async () => {
     try {
       const response = await api.get("/ladders");
-      console.log("Ladders response:", response);
       
       // A resposta vem no formato: {message: [...]}
       if (Array.isArray(response)) {
@@ -122,7 +120,6 @@ export default function ActivitiesPage() {
       } else if (response.data && Array.isArray(response.data)) {
         setLadders(response.data);
       } else {
-        console.warn("Formato de resposta inesperado para ladders, usando array vazio");
         setLadders([]);
       }
     } catch (error) {

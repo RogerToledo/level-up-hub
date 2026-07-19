@@ -55,7 +55,6 @@ export default function ReportsPage() {
     try {
       if (activeTab === "detailed") {
         const response = await api.get("/report");
-        console.log("Detailed report response:", response);
         
         // Trata diferentes formatos de resposta
         if (Array.isArray(response)) {
@@ -71,7 +70,6 @@ export default function ReportsPage() {
       } else if (activeTab === "gap") {
         const currentYear = new Date().getFullYear();
         const response = await api.get(`/gap-analysis?year=${currentYear}`);
-        console.log("Gap analysis response:", response);
         
         if (Array.isArray(response)) {
           setGapData(response);
