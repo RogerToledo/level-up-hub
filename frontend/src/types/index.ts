@@ -124,3 +124,22 @@ export interface ComparisonReport {
 export interface UpdateProgressRequest {
   progress_percentage: number;
 }
+
+export type LadderLevel = "P1" | "P2" | "P3" | "LT1" | "LT2" | "LT3" | "LT4";
+
+export interface CareerLadder {
+  id: string;
+  level: LadderLevel;
+  xp_reward: number;
+  technical: string;
+  expected_results: string;
+  leadership_scope: string;
+}
+
+export interface CreateCareerLadderRequest {
+  level: LadderLevel;
+  xp_reward: number;
+  technical: string;
+  expected_results: string;
+  leadership_scope: string;
+}
