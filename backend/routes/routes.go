@@ -103,6 +103,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/report/pdf", cfg.ActivityHandler.DownloadReportPDF)
 	protected.POST("/report/send-to-manager", cfg.ActivityHandler.SendReportToManager)
 	protected.GET("/ladders", cfg.LadderHandler.List)
+	protected.GET("/ladder/:id", cfg.LadderHandler.FindByID)
 
 	// Admin-only routes
 	admin := protected.Group("/")
@@ -113,7 +114,6 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.PATCH("/users/:id", cfg.UserHandler.Update) // Admin can update any user
 
 	admin.POST("/ladder", cfg.LadderHandler.Create)
-	admin.GET("/ladder/:id", cfg.LadderHandler.FindByID)
 	admin.PUT("/ladder/:id", cfg.LadderHandler.Update)
 	admin.DELETE("/ladder/:id", cfg.LadderHandler.Delete)
 
