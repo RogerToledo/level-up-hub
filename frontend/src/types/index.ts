@@ -34,7 +34,7 @@ export enum Pillar {
   INFLUENCE = "INFLUENCE",
 }
 
-export interface CreateActivityRequest {
+export interface CreateInitiativeRequest {
   user_id: string;
   ladder_id: string;
   pillars: Pillar[];
@@ -45,7 +45,7 @@ export interface CreateActivityRequest {
   is_pdi_target: boolean;
 }
 
-export interface Activity {
+export interface Initiative {
   id: string;
   user_id: string;
   ladder_id: string;
@@ -54,8 +54,29 @@ export interface Activity {
   progress_percentage: number;
   impact_summary?: string;
   is_pdi_target: boolean;
+  completed_at?: string;
+  created_at: string;
+  task_count: number;
+}
+
+export interface Task {
+  id: string;
+  initiative_id: string;
+  title: string;
+  execution?: string;
+  progress_percentage: number;
+  completed_at?: string;
   created_at: string;
   updated_at: string;
+  evidence_count: number;
+}
+
+export interface TaskEvidence {
+  id: string;
+  task_id: string;
+  evidence_url: string;
+  description?: string;
+  created_at: string;
 }
 
 export interface PillarStats {
