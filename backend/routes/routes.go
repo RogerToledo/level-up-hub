@@ -113,6 +113,9 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	admin.PATCH("/users/:id", cfg.UserHandler.Update) // Admin can update any user
 
 	admin.POST("/ladder", cfg.LadderHandler.Create)
+	admin.GET("/ladder/:id", cfg.LadderHandler.FindByID)
+	admin.PUT("/ladder/:id", cfg.LadderHandler.Update)
+	admin.DELETE("/ladder/:id", cfg.LadderHandler.Delete)
 
 	return r
 }

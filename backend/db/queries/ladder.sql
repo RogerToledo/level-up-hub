@@ -32,3 +32,16 @@ SELECT
 FROM career_ladder 
 WHERE level = $1;
 
+-- name: UpdateLadderLevel :exec
+UPDATE career_ladder
+SET level = $2,
+    xp_reward = $3,
+    technical = $4,
+    expected_results = $5,
+    leadership_scope = $6
+WHERE id = $1;
+
+-- name: DeleteLadderLevel :exec
+DELETE FROM career_ladder
+WHERE id = $1;
+

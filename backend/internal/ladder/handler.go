@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/me/level-up-hub/backend/apperr"
 	"github.com/me/level-up-hub/backend/config"
+	"github.com/me/level-up-hub/backend/internal/pkg/identity"
 	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/me/level-up-hub/backend/internal/rest"
 )
@@ -38,6 +39,64 @@ func (h *LadderHandler) Create(c *gin.Context) {
 	}
 
 	rest.Send(c.Writer, fmt.Sprintf(apperr.OkCreate, apperr.LadderPT), http.StatusCreated)
+}
+
+// FindByID handles retrieving a single career ladder level by ID.
+func (h *LadderHandler) FindByID(c *gin.Context) {
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	ladder, err := h.queries.FindByID(c.Request.Context(), id)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusNotFound, fmt.Sprintf(apperr.ErrIsNotFound, apperr.LadderLevelPT), nil)
+		return
+	}
+
+	rest.Send(c.Writer, ladder, http.StatusOK)
+}
+
+// Update handles updating an existing career ladder level.
+func (h *LadderHandler) Update(c *gin.Context) {
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	var input repository.UpdateLadderLevelParams
+	if err := c.ShouldBindJSON(&input); err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+	input.ID = id
+
+	err = h.queries.UpdateLadderLevel(c.Request.Context(), input)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	rest.Send(c.Writer, fmt.Sprintf(apperr.OkUpdate, apperr.LadderPT), http.StatusOK)
+}
+
+// Delete handles deleting a career ladder level.
+func (h *LadderHandler) Delete(c *gin.Context) {
+	id, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	err = h.queries.DeleteLadderLevel(c.Request.Context(), id)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	rest.Send(c.Writer, fmt.Sprintf(apperr.OkDelete, apperr.LadderPT), http.StatusOK)
 }
 
 // List handles retrieving all career ladder levels.
