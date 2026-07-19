@@ -342,7 +342,7 @@ export default function InitiativesPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Execucao (o que foi feito)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Execução</label>
                 <textarea value={taskForm.execution} onChange={(e) => setTaskForm({ ...taskForm, execution: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} placeholder="O que foi feito?" />
               </div>
               <div>
