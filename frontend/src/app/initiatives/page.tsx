@@ -56,6 +56,11 @@ export default function InitiativesPage() {
   const [evidenceTaskId, setEvidenceTaskId] = useState("");
   const [evidences, setEvidences] = useState<TaskEvidence[]>([]);
   const [evidenceForm, setEvidenceForm] = useState({ url: "", description: "" });
+  // View state
+  const [showViewInitModal, setShowViewInitModal] = useState(false);
+  const [viewingInit, setViewingInit] = useState<Initiative | null>(null);
+  const [showViewTaskModal, setShowViewTaskModal] = useState(false);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
   useEffect(() => { fetchInitiatives(); fetchLadders(); }, []);
 
@@ -208,6 +213,9 @@ export default function InitiativesPage() {
                       {init.description && <p className="text-gray-400 text-sm">{init.description}</p>}
                     </div>
                     <div className="flex gap-1">
+                      <button onClick={() => { setViewingInit(init); setShowViewInitModal(true); }} className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-700 rounded" title="Visualizar">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      </button>
                       <button onClick={() => handleEditInitClick(init)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded" title="Editar">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                       </button>
@@ -253,6 +261,9 @@ export default function InitiativesPage() {
                               <div className="flex items-center gap-1">
                                 <button onClick={() => openEvidenceModal(task.id)} className="p-1 text-gray-400 hover:text-blue-400 rounded" title="Evidencias">
                                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                                </button>
+                                <button onClick={() => { setViewingTask(task); setShowViewTaskModal(true); }} className="p-1 text-gray-400 hover:text-green-400 rounded" title="Visualizar">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                 </button>
                                 <button onClick={() => openTaskModal(init.id, task)} className="p-1 text-gray-400 hover:text-white rounded" title="Editar">
                                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -364,6 +375,109 @@ export default function InitiativesPage() {
                 <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600">Cancelar</button>
                 <button onClick={handleTaskSubmit} disabled={submitting} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">{submitting ? "Salvando..." : "Salvar"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Initiative Modal */}
+      {showViewInitModal && viewingInit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-700">
+            <div className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Detalhes da Iniciativa</h2>
+              <button onClick={() => { setShowViewInitModal(false); setViewingInit(null); }} className="text-gray-400 hover:text-white">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-1">{viewingInit.title}</h3>
+                <div className="flex gap-2 mb-3">
+                  {viewingInit.is_pdi_target && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 text-xs rounded">PDI</span>}
+                  {viewingInit.has_extra && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 text-xs rounded">Extra</span>}
+                  {viewingInit.progress_percentage === 100 && <span className="px-2 py-0.5 bg-green-900 text-green-300 text-xs rounded">Completo</span>}
+                </div>
+              </div>
+              {viewingInit.description && (
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Descricao</p>
+                  <p className="text-sm text-gray-200">{viewingInit.description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Progresso</p>
+                  <p className="text-lg font-bold text-white">{viewingInit.progress_percentage}%</p>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Tasks</p>
+                  <p className="text-lg font-bold text-white">{viewingInit.task_count}</p>
+                </div>
+              </div>
+              <div className="bg-gray-700 rounded-lg p-3">
+                <p className="text-xs text-gray-400 mb-2">Progresso</p>
+                <div className="w-full bg-gray-600 rounded-full h-2.5">
+                  <div className={`h-2.5 rounded-full ${viewingInit.progress_percentage === 100 ? "bg-green-600" : viewingInit.progress_percentage >= 50 ? "bg-blue-600" : "bg-yellow-600"}`} style={{ width: `${viewingInit.progress_percentage}%` }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-gray-700 px-6 py-4">
+              <button onClick={() => { setShowViewInitModal(false); setViewingInit(null); }} className="w-full px-4 py-3 bg-gray-700 text-gray-300 rounded-lg font-medium hover:bg-gray-600 transition-all">Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Task Modal */}
+      {showViewTaskModal && viewingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full border border-gray-700">
+            <div className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Detalhes da Task</h2>
+              <button onClick={() => { setShowViewTaskModal(false); setViewingTask(null); }} className="text-gray-400 hover:text-white">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-1">{viewingTask.title}</h3>
+                <div className="flex gap-2">
+                  {viewingTask.is_extra && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 text-xs rounded">Extra</span>}
+                  {viewingTask.progress_percentage === 100 && <span className="px-2 py-0.5 bg-green-900 text-green-300 text-xs rounded">Completo</span>}
+                </div>
+              </div>
+              {viewingTask.execution && (
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Execucao</p>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap">{viewingTask.execution}</p>
+                </div>
+              )}
+              {viewingTask.impact_summary && (
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Resumo do Impacto</p>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap">{viewingTask.impact_summary}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Progresso</p>
+                  <p className="text-lg font-bold text-white">{viewingTask.progress_percentage}%</p>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <p className="text-xs text-gray-400 mb-1">Evidencias</p>
+                  <p className="text-lg font-bold text-white">{viewingTask.evidence_count}</p>
+                </div>
+              </div>
+              <div className="bg-gray-700 rounded-lg p-3">
+                <p className="text-xs text-gray-400 mb-2">Progresso</p>
+                <div className="w-full bg-gray-600 rounded-full h-2.5">
+                  <div className={`h-2.5 rounded-full ${viewingTask.progress_percentage === 100 ? "bg-green-600" : "bg-blue-600"}`} style={{ width: `${viewingTask.progress_percentage}%` }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-gray-700 px-6 py-4">
+              <button onClick={() => { setShowViewTaskModal(false); setViewingTask(null); }} className="w-full px-4 py-3 bg-gray-700 text-gray-300 rounded-lg font-medium hover:bg-gray-600 transition-all">Fechar</button>
             </div>
           </div>
         </div>
