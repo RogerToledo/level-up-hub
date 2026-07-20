@@ -18,6 +18,7 @@ export default function ReportsPage() {
   const [error, setError] = useState("");
   const [sendingToManager, setSendingToManager] = useState(false);
   const [hasManager, setHasManager] = useState(false);
+  const [showConfirmSend, setShowConfirmSend] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -126,16 +127,16 @@ export default function ReportsPage() {
 
   const handleSendToManager = async () => {
     if (!hasManager) {
-      if (confirm('Você não tem um gerente cadastrado. Deseja cadastrar agora?')) {
-        window.location.href = '/profile';
-      }
+      toast('Cadastre seu gerente no perfil antes de enviar.', 'warning');
+      window.location.href = '/profile';
       return;
     }
 
-    if (!confirm('Deseja enviar o relatório completo para seu gerente por email?')) {
-      return;
-    }
+    setShowConfirmSend(true);
+  };
 
+  const confirmSendToManager = async () => {
+    setShowConfirmSend(false);
     try {
       setSendingToManager(true);
       const response = await api.post('/report/send-to-manager', {});
@@ -509,6 +510,37 @@ export default function ReportsPage() {
           </>
         )}
       </main>
+
+      {/* Modal de confirmacao de envio */}
+      {showConfirmSend && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-700">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Enviar relatorio para o gerente?</h3>
+              <p className="text-sm text-gray-400 mb-6">O relatorio completo sera enviado por email para seu gerente de engenharia.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmSend(false)}
+                  className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg font-medium hover:bg-gray-600 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmSendToManager}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
+                >
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
