@@ -191,6 +191,7 @@ type Task struct {
 	UpdatedAt          pgtype.Date `json:"updated_at"`
 	LadderID           uuid.UUID   `json:"ladder_id"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
+	IsExtra            bool        `json:"is_extra"`
 }
 
 type TaskEvidence struct {

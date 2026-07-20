@@ -27,11 +27,11 @@ func (q *Queries) CalculateInitiativeProgress(ctx context.Context, initiativeID 
 
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (
-    initiative_id, ladder_id, title, execution, impact_summary, progress_percentage
+    initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary
+RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary, is_extra
 `
 
 type CreateTaskParams struct {
@@ -41,6 +41,7 @@ type CreateTaskParams struct {
 	Execution          pgtype.Text `json:"execution"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
+	IsExtra            bool        `json:"is_extra"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -51,6 +52,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.Execution,
 		arg.ImpactSummary,
 		arg.ProgressPercentage,
+		arg.IsExtra,
 	)
 	var i Task
 	err := row.Scan(
@@ -64,6 +66,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.UpdatedAt,
 		&i.LadderID,
 		&i.ImpactSummary,
+		&i.IsExtra,
 	)
 	return i, err
 }
@@ -78,7 +81,7 @@ func (q *Queries) DeleteTask(ctx context.Context, id uuid.UUID) error {
 }
 
 const findTaskByID = `-- name: FindTaskByID :one
-SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra, completed_at, created_at, updated_at
 FROM tasks
 WHERE id = $1
 `
@@ -91,6 +94,7 @@ type FindTaskByIDRow struct {
 	Execution          pgtype.Text `json:"execution"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
+	IsExtra            bool        `json:"is_extra"`
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
 	UpdatedAt          pgtype.Date `json:"updated_at"`
@@ -107,6 +111,7 @@ func (q *Queries) FindTaskByID(ctx context.Context, id uuid.UUID) (FindTaskByIDR
 		&i.Execution,
 		&i.ImpactSummary,
 		&i.ProgressPercentage,
+		&i.IsExtra,
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -115,7 +120,7 @@ func (q *Queries) FindTaskByID(ctx context.Context, id uuid.UUID) (FindTaskByIDR
 }
 
 const listTasksByInitiative = `-- name: ListTasksByInitiative :many
-SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at,
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra, completed_at, created_at, updated_at,
     (SELECT COUNT(*) FROM task_evidences WHERE task_id = tasks.id)::int as evidence_count
 FROM tasks
 WHERE initiative_id = $1
@@ -130,6 +135,7 @@ type ListTasksByInitiativeRow struct {
 	Execution          pgtype.Text `json:"execution"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
+	IsExtra            bool        `json:"is_extra"`
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
 	UpdatedAt          pgtype.Date `json:"updated_at"`
@@ -153,6 +159,7 @@ func (q *Queries) ListTasksByInitiative(ctx context.Context, initiativeID uuid.U
 			&i.Execution,
 			&i.ImpactSummary,
 			&i.ProgressPercentage,
+			&i.IsExtra,
 			&i.CompletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -176,10 +183,11 @@ SET
     execution = $4,
     impact_summary = $5,
     progress_percentage = $6,
+    is_extra = $7,
     completed_at = CASE WHEN $6 = 100 THEN CURRENT_DATE ELSE NULL END,
     updated_at = CURRENT_DATE
 WHERE id = $1
-RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary
+RETURNING id, initiative_id, title, execution, progress_percentage, completed_at, created_at, updated_at, ladder_id, impact_summary, is_extra
 `
 
 type UpdateTaskParams struct {
@@ -189,6 +197,7 @@ type UpdateTaskParams struct {
 	Execution          pgtype.Text `json:"execution"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
+	IsExtra            bool        `json:"is_extra"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -199,6 +208,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.Execution,
 		arg.ImpactSummary,
 		arg.ProgressPercentage,
+		arg.IsExtra,
 	)
 	var i Task
 	err := row.Scan(
@@ -212,6 +222,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.UpdatedAt,
 		&i.LadderID,
 		&i.ImpactSummary,
+		&i.IsExtra,
 	)
 	return i, err
 }

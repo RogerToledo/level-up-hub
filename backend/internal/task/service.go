@@ -37,6 +37,7 @@ func (s *Service) Create(ctx context.Context, input CreateTaskDTO) (repository.T
 		Execution:          pgtype.Text{String: input.Execution, Valid: input.Execution != ""},
 		ImpactSummary:      pgtype.Text{String: input.ImpactSummary, Valid: input.ImpactSummary != ""},
 		ProgressPercentage: input.ProgressPercentage,
+		IsExtra:            input.IsExtra,
 	}
 
 	task, err := repoWithTx.CreateTask(ctx, params)
@@ -84,6 +85,7 @@ func (s *Service) Update(ctx context.Context, taskID uuid.UUID, input UpdateTask
 		Execution:          pgtype.Text{String: input.Execution, Valid: input.Execution != ""},
 		ImpactSummary:      pgtype.Text{String: input.ImpactSummary, Valid: input.ImpactSummary != ""},
 		ProgressPercentage: input.ProgressPercentage,
+		IsExtra:            input.IsExtra,
 	}
 
 	task, err := repoWithTx.UpdateTask(ctx, params)

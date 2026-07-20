@@ -174,10 +174,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Overdelivery */}
+        {/* Extra */}
         {Object.keys(overdelivery).length > 0 && (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Overdelivery 🚀</h2>
+            <h2 className="text-xl font-bold text-white mb-6">Extra</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(overdelivery).map(([level, xp]) => (
                 <div key={level} className="bg-gray-700 rounded-lg p-4 border border-gray-600">

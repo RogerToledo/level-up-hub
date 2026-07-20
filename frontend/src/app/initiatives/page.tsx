@@ -26,10 +26,11 @@ interface TaskForm {
   ladder_id: string;
   pillars: string[];
   progress_percentage: number;
+  is_extra: boolean;
 }
 
 const emptyInitForm: InitiativeForm = { title: "", description: "", is_pdi_target: false };
-const emptyTaskForm: TaskForm = { title: "", execution: "", impact_summary: "", ladder_id: "", pillars: [], progress_percentage: 0 };
+const emptyTaskForm: TaskForm = { title: "", execution: "", impact_summary: "", ladder_id: "", pillars: [], progress_percentage: 0, is_extra: false };
 
 export default function InitiativesPage() {
   const { toast } = useToast();
@@ -121,7 +122,7 @@ export default function InitiativesPage() {
     setTaskInitiativeId(initiativeId);
     if (task) {
       setEditingTask(task);
-      setTaskForm({ title: task.title, execution: task.execution || "", impact_summary: task.impact_summary || "", ladder_id: task.ladder_id || "", pillars: [], progress_percentage: task.progress_percentage });
+      setTaskForm({ title: task.title, execution: task.execution || "", impact_summary: task.impact_summary || "", ladder_id: task.ladder_id || "", pillars: [], progress_percentage: task.progress_percentage, is_extra: task.is_extra || false });
       try { const p = await api.get(`/tasks/${task.id}/pillars`); setTaskForm(prev => ({ ...prev, pillars: Array.isArray(p) ? p : [] })); } catch {}
     } else {
       setEditingTask(null);
@@ -134,10 +135,10 @@ export default function InitiativesPage() {
     setSubmitting(true);
     try {
       if (editingTask) {
-        await api.put(`/tasks/${editingTask.id}`, { title: taskForm.title, ladder_id: taskForm.ladder_id, pillars: taskForm.pillars, execution: taskForm.execution || undefined, impact_summary: taskForm.impact_summary || undefined, progress_percentage: taskForm.progress_percentage });
+        await api.put(`/tasks/${editingTask.id}`, { title: taskForm.title, ladder_id: taskForm.ladder_id, pillars: taskForm.pillars, execution: taskForm.execution || undefined, impact_summary: taskForm.impact_summary || undefined, progress_percentage: taskForm.progress_percentage, is_extra: taskForm.is_extra });
         toast("Task atualizada!");
       } else {
-        await api.post("/tasks", { initiative_id: taskInitiativeId, ladder_id: taskForm.ladder_id, pillars: taskForm.pillars, title: taskForm.title, execution: taskForm.execution || undefined, impact_summary: taskForm.impact_summary || undefined, progress_percentage: taskForm.progress_percentage });
+        await api.post("/tasks", { initiative_id: taskInitiativeId, ladder_id: taskForm.ladder_id, pillars: taskForm.pillars, title: taskForm.title, execution: taskForm.execution || undefined, impact_summary: taskForm.impact_summary || undefined, progress_percentage: taskForm.progress_percentage, is_extra: taskForm.is_extra });
         toast("Task criada!");
       }
       setShowTaskModal(false);
@@ -201,6 +202,7 @@ export default function InitiativesPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-lg font-semibold text-white">{init.title}</h3>
                         {init.is_pdi_target && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 text-xs rounded">PDI</span>}
+                        {init.has_extra && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 text-xs rounded">Extra</span>}
                         {init.progress_percentage === 100 && <span className="px-2 py-0.5 bg-green-900 text-green-300 text-xs rounded">Completo</span>}
                       </div>
                       {init.description && <p className="text-gray-400 text-sm">{init.description}</p>}
@@ -245,6 +247,7 @@ export default function InitiativesPage() {
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-white">{task.title}</span>
+                                {task.is_extra && <span className="text-xs text-orange-300 bg-orange-900 px-1.5 py-0.5 rounded">Extra</span>}
                                 {task.evidence_count > 0 && <span className="text-xs text-purple-300 bg-purple-900 px-1.5 py-0.5 rounded">{task.evidence_count} ev</span>}
                               </div>
                               <div className="flex items-center gap-1">
@@ -352,6 +355,10 @@ export default function InitiativesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Progresso: {taskForm.progress_percentage}%</label>
                 <input type="range" min="0" max="100" value={taskForm.progress_percentage} onChange={(e) => setTaskForm({ ...taskForm, progress_percentage: Number(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
+              </div>
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="is_extra" checked={taskForm.is_extra} onChange={(e) => setTaskForm({ ...taskForm, is_extra: e.target.checked })} className="w-4 h-4 text-orange-600 bg-gray-700 border-gray-600 rounded" />
+                <label htmlFor="is_extra" className="text-sm text-gray-300">Task extra (overdelivery)</label>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600">Cancelar</button>

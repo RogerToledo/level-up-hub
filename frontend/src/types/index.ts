@@ -48,15 +48,14 @@ export interface CreateInitiativeRequest {
 export interface Initiative {
   id: string;
   user_id: string;
-  ladder_id: string;
   title: string;
   description?: string;
   progress_percentage: number;
-  impact_summary?: string;
   is_pdi_target: boolean;
   completed_at?: string;
   created_at: string;
   task_count: number;
+  has_extra: boolean;
 }
 
 export interface Task {
@@ -67,6 +66,7 @@ export interface Task {
   execution?: string;
   impact_summary?: string;
   progress_percentage: number;
+  is_extra: boolean;
   completed_at?: string;
   created_at: string;
   updated_at: string;

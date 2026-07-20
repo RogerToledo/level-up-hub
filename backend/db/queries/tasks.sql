@@ -1,8 +1,8 @@
 -- name: CreateTask :one
 INSERT INTO tasks (
-    initiative_id, ladder_id, title, execution, impact_summary, progress_percentage
+    initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5, $6, $7
 )
 RETURNING *;
 
@@ -14,6 +14,7 @@ SET
     execution = $4,
     impact_summary = $5,
     progress_percentage = $6,
+    is_extra = $7,
     completed_at = CASE WHEN $6 = 100 THEN CURRENT_DATE ELSE NULL END,
     updated_at = CURRENT_DATE
 WHERE id = $1
@@ -23,12 +24,12 @@ RETURNING *;
 DELETE FROM tasks WHERE id = $1;
 
 -- name: FindTaskByID :one
-SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra, completed_at, created_at, updated_at
 FROM tasks
 WHERE id = $1;
 
 -- name: ListTasksByInitiative :many
-SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, completed_at, created_at, updated_at,
+SELECT id, initiative_id, ladder_id, title, execution, impact_summary, progress_percentage, is_extra, completed_at, created_at, updated_at,
     (SELECT COUNT(*) FROM task_evidences WHERE task_id = tasks.id)::int as evidence_count
 FROM tasks
 WHERE initiative_id = $1

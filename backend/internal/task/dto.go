@@ -13,6 +13,7 @@ type CreateTaskDTO struct {
 	Execution          string              `json:"execution"`
 	ImpactSummary      string              `json:"impact_summary"`
 	ProgressPercentage int32               `json:"progress_percentage" binding:"gte=0,lte=100"`
+	IsExtra            bool                `json:"is_extra"`
 }
 
 type UpdateTaskDTO struct {
@@ -22,4 +23,5 @@ type UpdateTaskDTO struct {
 	Execution          string              `json:"execution"`
 	ImpactSummary      string              `json:"impact_summary"`
 	ProgressPercentage int32               `json:"progress_percentage" binding:"gte=0,lte=100"`
+	IsExtra            bool                `json:"is_extra"`
 }

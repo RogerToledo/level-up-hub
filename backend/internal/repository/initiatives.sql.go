@@ -367,7 +367,8 @@ SELECT
     i.is_pdi_target,
     i.completed_at,
     i.created_at,
-    (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count
+    (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count,
+    (SELECT COUNT(*) > 0 FROM tasks WHERE initiative_id = i.id AND is_extra = true)::bool as has_extra
 FROM initiatives i
 WHERE i.user_id = $1
 ORDER BY i.progress_percentage ASC, i.created_at DESC
@@ -383,6 +384,7 @@ type ListUserInitiativesRow struct {
 	CompletedAt        pgtype.Date `json:"completed_at"`
 	CreatedAt          pgtype.Date `json:"created_at"`
 	TaskCount          int32       `json:"task_count"`
+	HasExtra           bool        `json:"has_extra"`
 }
 
 func (q *Queries) ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]ListUserInitiativesRow, error) {
@@ -404,6 +406,7 @@ func (q *Queries) ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]
 			&i.CompletedAt,
 			&i.CreatedAt,
 			&i.TaskCount,
+			&i.HasExtra,
 		); err != nil {
 			return nil, err
 		}

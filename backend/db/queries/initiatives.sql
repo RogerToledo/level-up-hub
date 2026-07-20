@@ -35,7 +35,8 @@ SELECT
     i.is_pdi_target,
     i.completed_at,
     i.created_at,
-    (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count
+    (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count,
+    (SELECT COUNT(*) > 0 FROM tasks WHERE initiative_id = i.id AND is_extra = true)::bool as has_extra
 FROM initiatives i
 WHERE i.user_id = $1
 ORDER BY i.progress_percentage ASC, i.created_at DESC;
