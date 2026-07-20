@@ -6,7 +6,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/smtp"
+	"time"
 
 	"github.com/me/level-up-hub/backend/config"
 )
@@ -93,8 +95,8 @@ func (s *Service) SendEmail(data EmailData) error {
 	// Send email via SMTP
 	addr := fmt.Sprintf("%s:%d", s.cfg.SMTPHost, s.cfg.SMTPPort)
 
-	// Connect to SMTP server (without TLS first for port 587)
-	client, err := smtp.Dial(addr)
+	// Connect to SMTP server with timeout
+	conn, err := net.DialTimeout("tcp", addr, 15*time.Second)
 	if err != nil {
 		slog.Error("failed to connect to SMTP server",
 			slog.String("error", err.Error()),
@@ -102,6 +104,15 @@ func (s *Service) SendEmail(data EmailData) error {
 			slog.Int("port", s.cfg.SMTPPort),
 		)
 		return fmt.Errorf("failed to connect to SMTP server: %w", err)
+	}
+
+	client, err := smtp.NewClient(conn, s.cfg.SMTPHost)
+	if err != nil {
+		conn.Close()
+		slog.Error("failed to create SMTP client",
+			slog.String("error", err.Error()),
+		)
+		return fmt.Errorf("failed to create SMTP client: %w", err)
 	}
 	defer client.Close()
 
