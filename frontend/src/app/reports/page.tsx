@@ -100,7 +100,11 @@ export default function ReportsPage() {
   const handleDownloadPDF = async () => {
     try {
       const token = localStorage.getItem("career_token");
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/report/pdf`, {
+      const baseUrl = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+        ? "/api"
+        : "http://localhost:8081/v1";
+
+      const response = await fetch(`${baseUrl}/report/pdf`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
