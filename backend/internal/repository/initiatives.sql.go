@@ -370,7 +370,7 @@ SELECT
     (SELECT COUNT(*) FROM tasks WHERE initiative_id = i.id)::int as task_count
 FROM initiatives i
 WHERE i.user_id = $1
-ORDER BY i.created_at DESC
+ORDER BY i.progress_percentage ASC, i.created_at DESC
 `
 
 type ListUserInitiativesRow struct {
