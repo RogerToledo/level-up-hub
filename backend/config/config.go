@@ -38,6 +38,9 @@ type Config struct {
 	SMTPPassword string `env:"SMTP_PASSWORD" envDefault:""`
 	SMTPFrom     string `env:"SMTP_FROM" envDefault:"noreply@leveluphub.com"`
 	SMTPFromName string `env:"SMTP_FROM_NAME" envDefault:"Level Up Hub"`
+
+	// Resend API (used instead of SMTP in production)
+	ResendAPIKey string `env:"RESEND_API_KEY" envDefault:""`
 }
 
 var (
