@@ -107,6 +107,8 @@ const findDetailedInitiativeReport = `-- name: FindDetailedInitiativeReport :man
 SELECT
     t.id,
     t.title,
+    t.execution,
+    t.impact_summary,
     t.progress_percentage,
     i.is_pdi_target,
     cl.level,
@@ -126,6 +128,8 @@ ORDER BY t.progress_percentage DESC, t.created_at DESC
 type FindDetailedInitiativeReportRow struct {
 	ID                 uuid.UUID   `json:"id"`
 	Title              string      `json:"title"`
+	Execution          pgtype.Text `json:"execution"`
+	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
 	IsPdiTarget        bool        `json:"is_pdi_target"`
 	Level              LadderLevel `json:"level"`
@@ -145,6 +149,8 @@ func (q *Queries) FindDetailedInitiativeReport(ctx context.Context, userID uuid.
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
+			&i.Execution,
+			&i.ImpactSummary,
 			&i.ProgressPercentage,
 			&i.IsPdiTarget,
 			&i.Level,

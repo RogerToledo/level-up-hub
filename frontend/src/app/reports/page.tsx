@@ -204,8 +204,20 @@ export default function ReportsPage() {
                                 <span key={p} className="px-2 py-0.5 bg-purple-900 text-purple-300 text-xs rounded">{p}</span>
                               ))}
                             </div>
+                            {item.execution && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-0.5">Execucao</p>
+                                <p className="text-sm text-gray-300">{item.execution}</p>
+                              </div>
+                            )}
+                            {item.impact_summary && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-0.5">Impacto</p>
+                                <p className="text-sm text-gray-300">{item.impact_summary}</p>
+                              </div>
+                            )}
                             {/* Progress bar */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mt-2">
                               <div className="flex-1 bg-gray-700 rounded-full h-1.5">
                                 <div className={`h-1.5 rounded-full transition-all ${item.progress_percentage === 100 ? "bg-green-500" : item.progress_percentage >= 50 ? "bg-blue-500" : "bg-yellow-500"}`} style={{ width: `${item.progress_percentage}%` }}></div>
                               </div>

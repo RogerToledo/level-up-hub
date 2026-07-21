@@ -64,6 +64,8 @@ ORDER BY cl.level ASC;
 SELECT
     t.id,
     t.title,
+    t.execution,
+    t.impact_summary,
     t.progress_percentage,
     i.is_pdi_target,
     cl.level,
