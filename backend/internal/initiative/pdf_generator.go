@@ -156,7 +156,7 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 
 	m.Row(15, func() {
 		m.Col(12, func() {
-			m.Text("Detalhamento das Iniciativas", props.Text{Size: 18, Style: consts.Bold, Color: primaryColor})
+			m.Text("Detalhamento das Tasks", props.Text{Size: 18, Style: consts.Bold, Color: primaryColor})
 		})
 	})
 
@@ -167,6 +167,7 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 	m.Row(8, func() {})
 
 	for idx, init := range initiatives {
+		// Title
 		m.Row(12, func() {
 			m.Col(12, func() {
 				m.Text(fmt.Sprintf("%d. %s", idx+1, init.Title), props.Text{
@@ -175,6 +176,7 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 			})
 		})
 
+		// Level, XP, Progress, PDI
 		m.Row(8, func() {
 			m.Col(3, func() { m.Text("Nivel:", props.Text{Size: 9, Style: consts.Bold}) })
 			m.Col(3, func() { m.Text(string(init.Level), props.Text{Size: 9}) })
@@ -201,6 +203,37 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 			})
 		})
 
+		// Execution
+		if init.Execution.Valid && init.Execution.String != "" {
+			m.Row(4, func() {})
+			m.Row(8, func() {
+				m.Col(12, func() {
+					m.Text("Execucao:", props.Text{Size: 9, Style: consts.Bold})
+				})
+			})
+			m.Row(8, func() {
+				m.Col(12, func() {
+					m.Text(init.Execution.String, props.Text{Size: 9, Color: darkGray})
+				})
+			})
+		}
+
+		// Impact Summary
+		if init.ImpactSummary.Valid && init.ImpactSummary.String != "" {
+			m.Row(4, func() {})
+			m.Row(8, func() {
+				m.Col(12, func() {
+					m.Text("Impacto:", props.Text{Size: 9, Style: consts.Bold})
+				})
+			})
+			m.Row(8, func() {
+				m.Col(12, func() {
+					m.Text(init.ImpactSummary.String, props.Text{Size: 9, Color: darkGray})
+				})
+			})
+		}
+
+		// Separator
 		m.Row(8, func() {})
 		m.Row(1, func() {
 			m.Col(12, func() { m.Line(0.3, props.Line{Color: lightGray}) })
@@ -211,7 +244,7 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 	if len(initiatives) == 0 {
 		m.Row(20, func() {
 			m.Col(12, func() {
-				m.Text("Nenhuma iniciativa registrada", props.Text{
+				m.Text("Nenhuma task registrada", props.Text{
 					Size: 12, Align: consts.Center, Color: darkGray, Style: consts.Italic,
 				})
 			})
