@@ -20,19 +20,12 @@ export default function ReportsPage() {
   const [hasManager, setHasManager] = useState(false);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
 
-  useEffect(() => {
-    loadData();
-    checkManagerInfo();
-  }, [activeTab]);
+  useEffect(() => { loadData(); checkManagerInfo(); }, [activeTab]);
 
-  // Recarrega info do gerente quando a janela recebe foco
   useEffect(() => {
-    const handleFocus = () => {
-      checkManagerInfo();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    const handleFocus = () => { checkManagerInfo(); };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const checkManagerInfo = async () => {
@@ -44,10 +37,7 @@ export default function ReportsPage() {
           setHasManager(!!(userData.manager_email && userData.manager_email.trim() !== ""));
         }
       }
-    } catch (err) {
-      console.error("Erro ao verificar gerente:", err);
-      setHasManager(false);
-    }
+    } catch { setHasManager(false); }
   };
 
   const loadData = async () => {
@@ -55,43 +45,18 @@ export default function ReportsPage() {
     setError("");
     try {
       if (activeTab === "detailed") {
-        const response = await api.get("/report");
-        
-        // Trata diferentes formatos de resposta
-        if (Array.isArray(response)) {
-          setDetailedData(response);
-        } else if (response.items && Array.isArray(response.items)) {
-          setDetailedData(response.items);
-        } else if (response.data && Array.isArray(response.data)) {
-          setDetailedData(response.data);
-        } else {
-          console.error("Formato de resposta inesperado:", response);
-          setDetailedData([]);
-        }
+        const r = await api.get("/report");
+        setDetailedData(Array.isArray(r) ? r : []);
       } else if (activeTab === "gap") {
-        const currentYear = new Date().getFullYear();
-        const response = await api.get(`/gap-analysis?year=${currentYear}`);
-        
-        if (Array.isArray(response)) {
-          setGapData(response);
-        } else if (response.items && Array.isArray(response.items)) {
-          setGapData(response.items);
-        } else if (response.data && Array.isArray(response.data)) {
-          setGapData(response.data);
-        } else {
-          console.error("Formato de resposta inesperado:", response);
-          setGapData([]);
-        }
+        const r = await api.get(`/gap-analysis?year=${new Date().getFullYear()}`);
+        setGapData(Array.isArray(r) ? r : []);
       } else if (activeTab === "radar") {
-        const data = await api.get("/career-radar");
-        setRadarData(data);
+        setRadarData(await api.get("/career-radar"));
       } else if (activeTab === "comparison") {
-        const data = await api.get("/cycle-comparison");
-        setComparisonData(data);
+        setComparisonData(await api.get("/cycle-comparison"));
       }
-    } catch (err) {
-      console.error("Erro ao carregar relatório:", err);
-      setError("Erro ao carregar relatório. Tente novamente.");
+    } catch {
+      setError("Erro ao carregar relatorio. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -100,42 +65,25 @@ export default function ReportsPage() {
   const handleDownloadPDF = async () => {
     try {
       const token = localStorage.getItem("career_token");
-      const baseUrl = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
-        ? "/api"
-        : "http://localhost:8081/v1";
-
-      const response = await fetch(`${baseUrl}/report/pdf`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Erro ao baixar PDF');
-      }
-      
+      const baseUrl = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "/api" : "http://localhost:8081/v1";
+      const response = await fetch(`${baseUrl}/report/pdf`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error("Erro ao baixar PDF");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `relatorio_${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = `relatorio_${new Date().toISOString().split("T")[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (error) {
-      console.error('Erro ao baixar PDF:', error);
-      toast('Erro ao baixar relatorio em PDF', 'error');
+    } catch {
+      toast("Erro ao baixar relatorio em PDF", "error");
     }
   };
 
   const handleSendToManager = async () => {
-    if (!hasManager) {
-      toast('Cadastre seu gerente no perfil antes de enviar.', 'warning');
-      window.location.href = '/profile';
-      return;
-    }
-
+    if (!hasManager) { toast("Cadastre seu gerente no perfil antes de enviar.", "warning"); window.location.href = "/profile"; return; }
     setShowConfirmSend(true);
   };
 
@@ -143,67 +91,54 @@ export default function ReportsPage() {
     setShowConfirmSend(false);
     try {
       setSendingToManager(true);
-      const response = await api.post('/report/send-to-manager', {});
-      toast(response.message || 'Relatorio enviado com sucesso!');
+      const response = await api.post("/report/send-to-manager", {});
+      toast(response.message || "Relatorio enviado com sucesso!");
     } catch (error: any) {
-      console.error('Erro ao enviar relatório:', error);
-      toast(error.message || 'Erro ao enviar relatorio para o gerente', 'error');
+      toast(error.message || "Erro ao enviar relatorio para o gerente", "error");
     } finally {
       setSendingToManager(false);
     }
   };
 
   const tabs = [
-    { id: "detailed" as const, label: "Relatório Detalhado", icon: "📄" },
+    { id: "detailed" as const, label: "Relatorio", icon: "📄" },
     { id: "gap" as const, label: "Gap Analysis", icon: "📊" },
     { id: "radar" as const, label: "Career Radar", icon: "🎯" },
-    { id: "comparison" as const, label: "Comparação de Ciclos", icon: "📈" },
+    { id: "comparison" as const, label: "Ciclos", icon: "📈" },
   ];
+
+  // Stats for detailed report
+  const totalTasks = detailedData.length;
+  const completedTasks = detailedData.filter((d) => d.progress_percentage === 100).length;
+  const totalXP = detailedData.filter((d) => d.progress_percentage === 100).reduce((sum: number, d: any) => sum + (d.xp_reward || 0), 0);
+  const avgProgress = totalTasks > 0 ? Math.round(detailedData.reduce((sum: number, d: any) => sum + d.progress_percentage, 0) / totalTasks) : 0;
+
+  const EmptyState = ({ title, subtitle }: { title: string; subtitle: string }) => (
+    <div className="bg-gray-800 border border-gray-700 rounded-xl p-16 text-center">
+      <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      </div>
+      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <p className="text-gray-400 text-sm">{subtitle}</p>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-950">
       <Sidebar />
-      
       <main className="flex-1 ml-64 p-8">
-        <PageHeader 
-          title="Relatórios" 
-          subtitle="Análises e insights sobre seu desenvolvimento"
+        <PageHeader
+          title="Relatorios"
+          subtitle="Analises e insights sobre seu desenvolvimento"
           action={
             activeTab === "detailed" && detailedData.length > 0 ? (
               <div className="flex gap-3">
-                <button
-                  onClick={handleSendToManager}
-                  disabled={sendingToManager}
-                  className={`px-6 py-3 ${
-                    hasManager 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-gray-600 hover:bg-gray-700'
-                  } text-white rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                    sendingToManager ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  title={hasManager ? 'Enviar relatório por email' : 'Cadastre um gerente no Perfil primeiro'}
-                >
-                  {sendingToManager ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      {hasManager ? 'Enviar para Gerente' : 'Cadastrar Gerente'}
-                    </>
-                  )}
+                <button onClick={handleSendToManager} disabled={sendingToManager} className={`px-5 py-2.5 ${hasManager ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700"} text-white rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${sendingToManager ? "opacity-50" : ""}`}>
+                  {sendingToManager ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                  {hasManager ? "Enviar" : "Cadastrar Gerente"}
                 </button>
-                <button
-                  onClick={handleDownloadPDF}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                <button onClick={handleDownloadPDF} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   Baixar PDF
                 </button>
               </div>
@@ -212,334 +147,231 @@ export default function ReportsPage() {
         />
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-gray-700">
+        <div className="flex gap-1 mb-8 bg-gray-800 rounded-lg p-1 border border-gray-700 w-fit">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-medium transition-all relative ${
-                activeTab === tab.id
-                  ? "text-blue-400"
-                  : "text-gray-400 hover:text-gray-300"
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
-              )}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-5 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === tab.id ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}>
+              <span className="mr-1.5">{tab.icon}</span>{tab.label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-400">Carregando relatório...</p>
-          </div>
+          <div className="text-center py-16"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-4"></div><p className="text-gray-400 text-sm">Carregando...</p></div>
         ) : error ? (
-          <div className="bg-gray-800 border border-red-700 rounded-lg p-8 text-center">
-            <div className="w-16 h-16 bg-red-900 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-              ⚠️
-            </div>
+          <div className="bg-gray-800 border border-red-900 rounded-xl p-8 text-center">
             <p className="text-red-400 mb-4">{error}</p>
-            <button
-              onClick={loadData}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
-            >
-              Tentar Novamente
-            </button>
+            <button onClick={loadData} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Tentar Novamente</button>
           </div>
         ) : (
           <>
-            {/* Detailed Report */}
+            {/* ===== DETAILED REPORT ===== */}
             {activeTab === "detailed" && (
               detailedData.length === 0 ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <h3 className="text-xl font-semibold text-white mb-2">Sem atividades cadastradas</h3>
-                  <p className="text-gray-400">Cadastre atividades para visualizar o relatório detalhado</p>
-                </div>
-              ) : Array.isArray(detailedData) ? (
-                <div className="space-y-4">
-                  {detailedData.map((activity, index) => (
-                    <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-bold text-white">{activity.title}</h3>
-                            {activity.is_pdi_target && (
-                              <span className="px-2 py-1 bg-blue-900 text-blue-300 text-xs font-medium rounded">PDI</span>
-                            )}
+                <EmptyState title="Sem dados" subtitle="Cadastre tasks nas suas iniciativas para gerar o relatorio" />
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Tasks</p>
+                      <p className="text-3xl font-bold text-white">{totalTasks}</p>
+                    </div>
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Concluidas</p>
+                      <p className="text-3xl font-bold text-green-400">{completedTasks}</p>
+                    </div>
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">XP Conquistado</p>
+                      <p className="text-3xl font-bold text-blue-400">{totalXP}</p>
+                    </div>
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Progresso Medio</p>
+                      <p className="text-3xl font-bold text-yellow-400">{avgProgress}%</p>
+                    </div>
+                  </div>
+
+                  {/* Task list */}
+                  <div className="space-y-3">
+                    {detailedData.map((item: any, index: number) => (
+                      <div key={index} className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-gray-600 transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <h3 className="text-base font-semibold text-white">{item.title}</h3>
+                              <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded font-medium">{item.level}</span>
+                              {item.is_pdi_target && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 text-xs rounded">PDI</span>}
+                              {item.pillars && Array.isArray(item.pillars) && item.pillars.map((p: string) => (
+                                <span key={p} className="px-2 py-0.5 bg-purple-900 text-purple-300 text-xs rounded">{p}</span>
+                              ))}
+                            </div>
+                            {/* Progress bar */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-gray-700 rounded-full h-1.5">
+                                <div className={`h-1.5 rounded-full transition-all ${item.progress_percentage === 100 ? "bg-green-500" : item.progress_percentage >= 50 ? "bg-blue-500" : "bg-yellow-500"}`} style={{ width: `${item.progress_percentage}%` }}></div>
+                              </div>
+                              <span className="text-xs text-gray-400 min-w-8">{item.progress_percentage}%</span>
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-400 mb-2">Nível: {activity.level_name}</p>
-                          {activity.description && (
-                            <p className="text-gray-400 text-sm">{activity.description}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-400">{activity.xp_reward} XP</p>
-                          <p className="text-sm text-gray-500">
-                            {activity.progress_percentage}% completo
-                          </p>
+                          <div className="text-right shrink-0">
+                            <p className="text-lg font-bold text-blue-400">{item.xp_reward}</p>
+                            <p className="text-xs text-gray-500">XP</p>
+                          </div>
                         </div>
                       </div>
-                      
-                      {activity.impact_summary && (
-                        <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-                          <p className="text-sm font-medium text-gray-300 mb-1">Impacto:</p>
-                          <p className="text-sm text-gray-400">{activity.impact_summary}</p>
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
+
+            {/* ===== GAP ANALYSIS ===== */}
+            {activeTab === "gap" && (
+              gapData.length === 0 ? (
+                <EmptyState title="Sem dados de gap" subtitle="Marque iniciativas como PDI e cadastre tasks para ver a analise" />
+              ) : (
+                <div className="space-y-4">
+                  {gapData.map((gap, i) => (
+                    <div key={i} className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="px-3 py-1 bg-blue-900 text-blue-300 text-sm font-semibold rounded-full">{gap.level}</span>
+                          <span className="text-sm text-gray-300 capitalize">{gap.pillar.toLowerCase()}</span>
                         </div>
-                      )}
-                      
-                      <div className="mt-4 flex items-center gap-3">
-                        <div className="flex-1 bg-gray-700 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              activity.progress_percentage === 100 
-                                ? 'bg-green-600' 
-                                : activity.progress_percentage >= 50 
-                                ? 'bg-blue-600' 
-                                : 'bg-yellow-600'
-                            }`}
-                            style={{ width: `${activity.progress_percentage}%` }}
-                          ></div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${gap.status === "DONE" ? "bg-green-900 text-green-300" : gap.status === "CRITICAL" ? "bg-red-900 text-red-300" : "bg-yellow-900 text-yellow-300"}`}>
+                          {gap.status === "DONE" ? "Atingido" : gap.status === "CRITICAL" ? "Critico" : "Em progresso"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                        <div>
+                          <p className="text-2xl font-bold text-white">{gap.target}</p>
+                          <p className="text-xs text-gray-500">Meta XP</p>
                         </div>
+                        <div>
+                          <p className="text-2xl font-bold text-green-400">{gap.achieved}</p>
+                          <p className="text-xs text-gray-500">Conquistado</p>
+                        </div>
+                        <div>
+                          <p className={`text-2xl font-bold ${gap.gap <= 0 ? "text-green-400" : "text-orange-400"}`}>{gap.gap}</p>
+                          <p className="text-xs text-gray-500">Gap</p>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <div className="w-full bg-gray-700 rounded-full h-2.5">
+                          <div className={`h-2.5 rounded-full transition-all ${gap.status === "DONE" ? "bg-green-500" : gap.status === "CRITICAL" ? "bg-red-500" : "bg-yellow-500"}`} style={{ width: `${Math.min(gap.percentage, 100)}%` }}></div>
+                        </div>
+                        <p className="text-right text-xs text-gray-400 mt-1">{gap.percentage}%</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <div className="w-16 h-16 bg-red-900 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                    ⚠️
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Erro ao carregar dados</h3>
-                  <p className="text-gray-400 mb-6">Formato de resposta inesperado</p>
-                  <button 
-                    onClick={loadData}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
-                  >
-                    Tentar Novamente
-                  </button>
-                </div>
               )
             )}
 
-            {/* Gap Analysis */}
-            {activeTab === "gap" && (
-              gapData.length === 0 ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <h3 className="text-xl font-semibold text-white mb-2">Sem dados de análise de gap</h3>
-                  <p className="text-gray-400">Cadastre atividades para visualizar este relatório</p>
-                </div>
-              ) : Array.isArray(gapData) ? (
-              <div className="space-y-4">{gapData.map((gap, index) => (
-                  <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          <span className="text-blue-400">{gap.level}</span>
-                          <span className="text-gray-500 mx-2">•</span>
-                          <span className="capitalize">{gap.pillar.toLowerCase()}</span>
-                        </h3>
-                        <p className="text-sm text-gray-400 mt-1">Meta de XP para este nível e pilar</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        gap.status === "DONE" ? "bg-green-900 text-green-300" :
-                        gap.status === "IN_PROGRESS" ? "bg-yellow-900 text-yellow-300" :
-                        "bg-red-900 text-red-300"
-                      }`}>
-                        {gap.status === "DONE" ? "Completo" : gap.status === "IN_PROGRESS" ? "Em Progresso" : "Crítico"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-400">Meta</p>
-                        <p className="text-2xl font-bold text-white">{gap.target}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400">Conquistado</p>
-                        <p className="text-2xl font-bold text-blue-400">{gap.achieved}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400">Gap</p>
-                        <p className="text-2xl font-bold text-orange-400">{gap.gap}</p>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-3">
-                      <div
-                        className="bg-blue-600 h-3 rounded-full transition-all"
-                        style={{ width: `${gap.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              ) : (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <div className="w-16 h-16 bg-red-900 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                    ⚠️
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Erro ao carregar dados</h3>
-                  <p className="text-gray-400 mb-6">Formato de resposta inesperado</p>
-                  <button 
-                    onClick={loadData}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
-                  >
-                    Tentar Novamente
-                  </button>
-                </div>
-              )
-            )}
-
-            {/* Career Radar */}
+            {/* ===== CAREER RADAR ===== */}
             {activeTab === "radar" && (
-              !radarData ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <h3 className="text-xl font-semibold text-white mb-2">Sem dados do radar de carreira</h3>
-                  <p className="text-gray-400">Cadastre atividades para visualizar este relatório</p>
-                </div>
+              !radarData || !radarData.breakdown?.length ? (
+                <EmptyState title="Sem dados do radar" subtitle="Conclua tasks para ver a distribuicao por nivel" />
               ) : (
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <p className="text-sm text-gray-400 mb-1">Total de Atividades</p>
-                    <p className="text-4xl font-bold text-white">{radarData.total_activities}</p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 text-center">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Tasks Concluidas</p>
+                      <p className="text-4xl font-bold text-white">{radarData.total_activities}</p>
+                    </div>
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 text-center">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">XP Total</p>
+                      <p className="text-4xl font-bold text-blue-400">{radarData.total_xp}</p>
+                    </div>
                   </div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <p className="text-sm text-gray-400 mb-1">XP Total</p>
-                    <p className="text-4xl font-bold text-blue-400">{radarData.total_xp}</p>
-                  </div>
-                </div>
 
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-white mb-6">Distribuição por Nível</h3>
-                  <div className="space-y-4">
-                    {radarData.breakdown && Array.isArray(radarData.breakdown) ? radarData.breakdown.map((level, index) => (
-                      <div key={index} className="border-b border-gray-700 pb-4 last:border-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-white">{level.level_name}</span>
-                          <span className="text-sm text-gray-400">{level.activity_count} atividades</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-400">XP: </span>
-                            <span className="text-blue-400 font-medium">{level.total_xp}</span>
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 className="text-base font-semibold text-white mb-5">Distribuicao por Nivel</h3>
+                    <div className="space-y-4">
+                      {radarData.breakdown.map((level, i) => (
+                        <div key={i}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-blue-900 text-blue-300 text-xs font-semibold rounded">{level.level_name}</span>
+                              <span className="text-xs text-gray-400">{level.activity_count} tasks</span>
+                            </div>
+                            <span className="text-sm font-medium text-white">{level.total_xp} XP</span>
                           </div>
-                          <div>
-                            <span className="text-gray-400">% Volume: </span>
-                            <span className="text-white font-medium">{level.volume_percent.toFixed(1)}%</span>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${level.xp_percent}%` }}></div>
                           </div>
+                          <p className="text-right text-xs text-gray-500 mt-0.5">{level.xp_percent.toFixed(1)}% do XP total</p>
                         </div>
-                      </div>
-                    )) : (
-                      <p className="text-gray-400 text-center py-4">Nenhum dado de distribuição disponível</p>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
               )
             )}
 
-            {/* Cycle Comparison */}
+            {/* ===== CYCLE COMPARISON ===== */}
             {activeTab === "comparison" && (
-              !comparisonData ? (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-                  <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <h3 className="text-xl font-semibold text-white mb-2">Sem dados de comparação</h3>
-                  <p className="text-gray-400">Cadastre atividades em diferentes ciclos para visualizar este relatório</p>
-                </div>
+              !comparisonData || !comparisonData.level_evolution?.length ? (
+                <EmptyState title="Sem dados de comparacao" subtitle="Necessario ter ciclos de avaliacao e tasks concluidas em periodos diferentes" />
               ) : (
-              <div>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-                  <div className="grid grid-cols-3 gap-6">
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Ciclo Atual</p>
-                      <p className="text-xl font-bold text-white">{comparisonData.current_cycle}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Ciclo Anterior</p>
-                      <p className="text-xl font-bold text-gray-300">{comparisonData.previous_cycle}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Crescimento</p>
-                      <p className={`text-2xl font-bold ${comparisonData.growth_xp >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {comparisonData.growth_xp >= 0 ? "+" : ""}{comparisonData.growth_xp} XP
-                        <span className="text-sm ml-2">({comparisonData.percent_change.toFixed(1)}%)</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-white mb-6">Evolução por Nível</h3>
-                  <div className="space-y-4">
-                    {comparisonData.level_evolution && Array.isArray(comparisonData.level_evolution) ? comparisonData.level_evolution.map((level, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-                        <span className="font-medium text-white">{level.level_name}</span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-gray-400">{level.prev_xp} XP</span>
-                          <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                          <span className="text-sm font-medium text-white">{level.current_xp} XP</span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            level.diff > 0 ? "bg-green-900 text-green-300" : 
-                            level.diff < 0 ? "bg-red-900 text-red-300" : 
-                            "bg-gray-600 text-gray-300"
-                          }`}>
-                            {level.diff > 0 ? "+" : ""}{level.diff}
-                          </span>
-                        </div>
+                <div className="space-y-6">
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <div className="grid grid-cols-3 gap-6 text-center">
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Ciclo Atual</p>
+                        <p className="text-lg font-bold text-white">{comparisonData.current_cycle || "—"}</p>
                       </div>
-                    )) : (
-                      <p className="text-gray-400 text-center py-4">Nenhum dado de evolução disponível</p>
-                    )}
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Anterior</p>
+                        <p className="text-lg font-bold text-gray-400">{comparisonData.previous_cycle || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Crescimento</p>
+                        <p className={`text-xl font-bold ${comparisonData.growth_xp >= 0 ? "text-green-400" : "text-red-400"}`}>
+                          {comparisonData.growth_xp >= 0 ? "+" : ""}{comparisonData.growth_xp} XP
+                        </p>
+                        <p className="text-xs text-gray-500">{comparisonData.percent_change.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 className="text-base font-semibold text-white mb-4">Evolucao por Nivel</h3>
+                    <div className="space-y-3">
+                      {comparisonData.level_evolution.map((level, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                          <span className="px-2.5 py-1 bg-blue-900 text-blue-300 text-xs font-semibold rounded">{level.level_name}</span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-400 w-16 text-right">{level.prev_xp} XP</span>
+                            <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                            <span className="text-sm font-medium text-white w-16">{level.current_xp} XP</span>
+                            <span className={`px-2.5 py-1 rounded text-xs font-semibold min-w-14 text-center ${level.diff > 0 ? "bg-green-900 text-green-300" : level.diff < 0 ? "bg-red-900 text-red-300" : "bg-gray-600 text-gray-300"}`}>
+                              {level.diff > 0 ? "+" : ""}{level.diff}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
               )
             )}
           </>
         )}
       </main>
 
-      {/* Modal de confirmacao de envio */}
+      {/* Confirm send modal */}
       {showConfirmSend && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-700">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-700">
             <div className="p-6 text-center">
-              <div className="w-14 h-14 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+              <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Enviar relatorio para o gerente?</h3>
-              <p className="text-sm text-gray-400 mb-6">O relatorio completo sera enviado por email para seu gerente de engenharia.</p>
+              <h3 className="text-base font-semibold text-white mb-1">Enviar relatorio?</h3>
+              <p className="text-sm text-gray-400 mb-5">O PDF sera enviado por email para seu gerente.</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirmSend(false)}
-                  className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg font-medium hover:bg-gray-600 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmSendToManager}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
-                >
-                  Enviar
-                </button>
+                <button onClick={() => setShowConfirmSend(false)} className="flex-1 px-4 py-2.5 bg-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-600">Cancelar</button>
+                <button onClick={confirmSendToManager} className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">Enviar</button>
               </div>
             </div>
           </div>
