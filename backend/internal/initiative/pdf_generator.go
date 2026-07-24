@@ -52,7 +52,7 @@ func buildCoverPage(m pdf.Maroto, data ReportData) {
 
 	m.Row(25, func() {
 		m.Col(12, func() {
-			m.Text("Dossie de Evolucao de Carreira", props.Text{
+			m.Text("Relatório de Evoluç˜o de Carreira", props.Text{
 				Size: 24, Style: consts.Bold, Align: consts.Center, Color: primaryColor,
 			})
 		})
