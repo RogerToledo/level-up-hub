@@ -67,6 +67,7 @@ SELECT
     t.execution,
     t.impact_summary,
     t.progress_percentage,
+    t.is_extra,
     i.is_pdi_target,
     cl.level,
     cl.xp_reward,

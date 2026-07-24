@@ -136,24 +136,82 @@ func buildExecutiveSummary(m pdf.Maroto, initiatives []repository.FindDetailedIn
 	stats := calculateStatistics(initiatives)
 
 	m.Row(25, func() {
-		m.Col(4, func() {
-			m.Text("Total de Iniciativas", props.Text{Size: 8, Color: darkGray})
+		m.Col(3, func() {
+			m.Text("Total de Tasks", props.Text{Size: 8, Color: darkGray})
 			m.Text(fmt.Sprintf("%d", stats.TotalCount), props.Text{Top: 5, Size: 14, Style: consts.Bold, Color: primaryColor})
 		})
-		m.Col(4, func() {
+		m.Col(3, func() {
 			m.Text("Concluidas", props.Text{Size: 8, Color: darkGray})
 			m.Text(fmt.Sprintf("%d", stats.CompletedCount), props.Text{Top: 5, Size: 14, Style: consts.Bold, Color: secondaryColor})
 		})
-		m.Col(4, func() {
-			m.Text("XP Total Conquistado", props.Text{Size: 8, Color: darkGray})
+		m.Col(3, func() {
+			m.Text("XP Conquistado", props.Text{Size: 8, Color: darkGray})
 			m.Text(fmt.Sprintf("%d XP", stats.TotalXP), props.Text{Top: 5, Size: 14, Style: consts.Bold, Color: warningColor})
 		})
+		m.Col(3, func() {
+			m.Text("XP Total PDI", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d XP", stats.TotalPdiXP), props.Text{Top: 5, Size: 14, Style: consts.Bold, Color: primaryColor})
+		})
 	})
+
+	m.Row(6, func() {})
+
+	// PDI stats
+	m.Row(12, func() {
+		m.Col(12, func() {
+			m.Text("PDI", props.Text{Size: 11, Style: consts.Bold})
+		})
+	})
+	m.Row(20, func() {
+		m.Col(3, func() {
+			m.Text("Tasks PDI", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d", stats.PdiCount), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: primaryColor})
+		})
+		m.Col(3, func() {
+			m.Text("Concluidas", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d", stats.PdiCompletedCount), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: secondaryColor})
+		})
+		m.Col(3, func() {
+			m.Text("XP Conquistado", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d XP", stats.PdiCompletedXP), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: warningColor})
+		})
+		m.Col(3, func() {
+			m.Text("XP Possivel", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d XP", stats.TotalPdiXP), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: primaryColor})
+		})
+	})
+
+	m.Row(6, func() {})
+
+	// Extra stats
+	m.Row(12, func() {
+		m.Col(12, func() {
+			m.Text("Extra", props.Text{Size: 11, Style: consts.Bold})
+		})
+	})
+	m.Row(20, func() {
+		m.Col(3, func() {
+			m.Text("Tasks Extra", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d", stats.ExtraCount), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: primaryColor})
+		})
+		m.Col(3, func() {
+			m.Text("Concluidas", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d", stats.ExtraCompletedCount), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: secondaryColor})
+		})
+		m.Col(3, func() {
+			m.Text("XP Conquistado", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d XP", stats.ExtraCompletedXP), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: warningColor})
+		})
+		m.Col(3, func() {
+			m.Text("XP Possivel", props.Text{Size: 8, Color: darkGray})
+			m.Text(fmt.Sprintf("%d XP", stats.TotalExtraXP), props.Text{Top: 5, Size: 12, Style: consts.Bold, Color: primaryColor})
+		})
+	})
+
+	m.Row(10, func() {})
 }
 
 func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailedInitiativeReportRow) {
-	m.AddPage()
-
 	m.Row(15, func() {
 		m.Col(12, func() {
 			m.Text("Detalhamento das Tasks", props.Text{Size: 18, Style: consts.Bold, Color: primaryColor})
@@ -253,9 +311,17 @@ func buildInitiativesSection(m pdf.Maroto, initiatives []repository.FindDetailed
 }
 
 type statistics struct {
-	TotalCount     int
-	CompletedCount int
-	TotalXP        int32
+	TotalCount          int
+	CompletedCount      int
+	TotalXP             int32
+	TotalPdiXP          int32
+	PdiCount            int
+	PdiCompletedCount   int
+	PdiCompletedXP      int32
+	ExtraCount          int
+	ExtraCompletedCount int
+	ExtraCompletedXP    int32
+	TotalExtraXP        int32
 }
 
 func calculateStatistics(initiatives []repository.FindDetailedInitiativeReportRow) statistics {
@@ -265,6 +331,22 @@ func calculateStatistics(initiatives []repository.FindDetailedInitiativeReportRo
 		if init.ProgressPercentage == 100 {
 			stats.CompletedCount++
 			stats.TotalXP += init.XpReward
+		}
+		if init.IsPdiTarget {
+			stats.PdiCount++
+			stats.TotalPdiXP += init.XpReward
+			if init.ProgressPercentage == 100 {
+				stats.PdiCompletedCount++
+				stats.PdiCompletedXP += init.XpReward
+			}
+		}
+		if init.IsExtra {
+			stats.ExtraCount++
+			stats.TotalExtraXP += init.XpReward
+			if init.ProgressPercentage == 100 {
+				stats.ExtraCompletedCount++
+				stats.ExtraCompletedXP += init.XpReward
+			}
 		}
 	}
 	return stats

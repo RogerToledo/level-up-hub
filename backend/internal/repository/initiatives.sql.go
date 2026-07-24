@@ -110,6 +110,7 @@ SELECT
     t.execution,
     t.impact_summary,
     t.progress_percentage,
+    t.is_extra,
     i.is_pdi_target,
     cl.level,
     cl.xp_reward,
@@ -131,6 +132,7 @@ type FindDetailedInitiativeReportRow struct {
 	Execution          pgtype.Text `json:"execution"`
 	ImpactSummary      pgtype.Text `json:"impact_summary"`
 	ProgressPercentage int32       `json:"progress_percentage"`
+	IsExtra            bool        `json:"is_extra"`
 	IsPdiTarget        bool        `json:"is_pdi_target"`
 	Level              LadderLevel `json:"level"`
 	XpReward           int32       `json:"xp_reward"`
@@ -152,6 +154,7 @@ func (q *Queries) FindDetailedInitiativeReport(ctx context.Context, userID uuid.
 			&i.Execution,
 			&i.ImpactSummary,
 			&i.ProgressPercentage,
+			&i.IsExtra,
 			&i.IsPdiTarget,
 			&i.Level,
 			&i.XpReward,
