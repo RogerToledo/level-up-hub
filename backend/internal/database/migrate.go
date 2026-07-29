@@ -53,9 +53,40 @@ func RunMigrations(cfg *config.Config) error {
 	}
 	defer m.Close()
 
+	// Force migration version if configured (used to recover from dirty state)
+	if cfg.ForceMigrationVersion > 0 {
+		slog.Warn("forcing migration version", slog.Int("version", cfg.ForceMigrationVersion))
+		if err := m.Force(cfg.ForceMigrationVersion); err != nil {
+			slog.Error("failed to force migration version", slog.String("error", err.Error()))
+			return err
+		}
+	}
+
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			slog.Info("migrations: no new migrations to apply")
+			return nil
+		}
+		// Handle dirty state: force the dirty version to clean it, then retry
+		if dirtyVersion, ok := isDirtyError(err); ok {
+			slog.Warn("migrations: dirty state detected, attempting recovery",
+				slog.Int("dirty_version", dirtyVersion),
+			)
+			// Force the dirty version (marks it as not dirty so Up can proceed)
+			if forceErr := m.Force(dirtyVersion); forceErr != nil {
+				slog.Error("failed to force migration version", slog.String("error", forceErr.Error()))
+				return forceErr
+			}
+			// Try Up again — it will skip the forced version and apply the next ones
+			if retryErr := m.Up(); retryErr != nil && !errors.Is(retryErr, migrate.ErrNoChange) {
+				// If it still fails (e.g. "already exists"), the DB is ahead of schema_migrations
+				// Try forcing to the latest available migration
+				slog.Warn("migrations: retry failed, DB may be ahead of schema_migrations",
+					slog.String("error", retryErr.Error()),
+				)
+				return retryErr
+			}
+			slog.Info("migrations: recovered from dirty state")
 			return nil
 		}
 		slog.Error("failed to run migrations", slog.String("error", err.Error()))
@@ -69,4 +100,17 @@ func RunMigrations(cfg *config.Config) error {
 	)
 
 	return nil
+}
+
+// isDirtyError checks if the error is a dirty database error and returns the version
+func isDirtyError(err error) (int, bool) {
+	if err == nil {
+		return 0, false
+	}
+	// golang-migrate returns ErrDirty with the version number
+	var dirtyErr *migrate.ErrDirty
+	if errors.As(err, &dirtyErr) {
+		return dirtyErr.Version, true
+	}
+	return 0, false
 }

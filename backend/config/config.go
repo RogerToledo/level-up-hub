@@ -29,7 +29,8 @@ type Config struct {
 	AllowedOrigins []string `env:"ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3000"`
 
 	// Migration Settings
-	MigrationsPath string `env:"MIGRATIONS_PATH" envDefault:"backend/db/migrations"`
+	MigrationsPath        string `env:"MIGRATIONS_PATH" envDefault:"backend/db/migrations"`
+	ForceMigrationVersion int    `env:"FORCE_MIGRATION_VERSION" envDefault:"0"`
 
 	// Email/SMTP Settings
 	SMTPHost     string `env:"SMTP_HOST" envDefault:"smtp.gmail.com"`
@@ -41,6 +42,9 @@ type Config struct {
 
 	// Resend API (used instead of SMTP in production)
 	ResendAPIKey string `env:"RESEND_API_KEY" envDefault:""`
+
+	// Gemini AI
+	GeminiAPIKey string `env:"GEMINI_API_KEY" envDefault:""`
 }
 
 var (

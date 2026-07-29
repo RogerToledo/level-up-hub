@@ -62,6 +62,12 @@ export default function InitiativesPage() {
   const [showViewTaskModal, setShowViewTaskModal] = useState(false);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
+  // AI Classification state
+  const [showClassifyModal, setShowClassifyModal] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+  const [classifyForm, setClassifyForm] = useState({ title: "", execution: "" });
+  const [classifyResult, setClassifyResult] = useState<{ level: string; pillars: string[] } | null>(null);
+
   useEffect(() => { fetchInitiatives(); fetchLadders(); }, []);
 
   const fetchInitiatives = async () => {
@@ -176,6 +182,38 @@ export default function InitiativesPage() {
 
   const handlePillarToggle = (pillar: string) => {
     setTaskForm(prev => ({ ...prev, pillars: prev.pillars.includes(pillar) ? prev.pillars.filter(p => p !== pillar) : [...prev.pillars, pillar] }));
+  };
+
+  const openClassifyModal = () => {
+    setClassifyForm({ title: taskForm.title, execution: taskForm.execution });
+    setClassifyResult(null);
+    setShowClassifyModal(true);
+  };
+
+  const handleClassify = async () => {
+    if (!classifyForm.title.trim()) { toast("Preencha o titulo para classificar", "warning"); return; }
+    setClassifying(true);
+    try {
+      const result = await api.post("/tasks/classify", { title: classifyForm.title, execution: classifyForm.execution || undefined });
+      setClassifyResult(result as { level: string; pillars: string[] });
+    } catch {
+      toast("Erro ao classificar. Tente novamente.", "error");
+    } finally {
+      setClassifying(false);
+    }
+  };
+
+  const confirmClassification = () => {
+    if (!classifyResult) return;
+    // Find ladder_id by level name
+    const ladder = ladders.find(l => l.level === classifyResult.level);
+    setTaskForm(prev => ({
+      ...prev,
+      ladder_id: ladder?.id || prev.ladder_id,
+      pillars: classifyResult.pillars || prev.pillars,
+    }));
+    setShowClassifyModal(false);
+    toast("Nivel e pilares preenchidos!");
   };
 
   return (
@@ -372,6 +410,10 @@ export default function InitiativesPage() {
                 <label htmlFor="is_extra" className="text-sm text-gray-300">Task extra (overdelivery)</label>
               </div>
               <div className="flex gap-3 pt-2">
+                <button type="button" onClick={openClassifyModal} className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  IA
+                </button>
                 <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600">Cancelar</button>
                 <button onClick={handleTaskSubmit} disabled={submitting} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">{submitting ? "Salvando..." : "Salvar"}</button>
               </div>
@@ -513,6 +555,65 @@ export default function InitiativesPage() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-sm text-center py-4">Nenhuma evidencia cadastrada</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Classify AI Modal */}
+      {showClassifyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-700">
+            <div className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <h2 className="text-lg font-bold text-white">Classificar com IA</h2>
+              </div>
+              <button onClick={() => setShowClassifyModal(false)} className="text-gray-400 hover:text-white">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Titulo da atividade *</label>
+                <input type="text" value={classifyForm.title} onChange={(e) => setClassifyForm({ ...classifyForm, title: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="O que foi feito?" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Resultados / Execucao</label>
+                <textarea value={classifyForm.execution} onChange={(e) => setClassifyForm({ ...classifyForm, execution: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" rows={3} placeholder="Descreva os resultados obtidos..." />
+              </div>
+
+              {!classifyResult && (
+                <button onClick={handleClassify} disabled={classifying} className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {classifying ? (
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Classificando...</>
+                  ) : (
+                    <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Classificar</>
+                  )}
+                </button>
+              )}
+
+              {classifyResult && (
+                <div className="space-y-3">
+                  <div className="bg-gray-700 rounded-lg p-4 border border-purple-900">
+                    <p className="text-xs text-gray-400 mb-2">Resultado da classificacao:</p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-sm text-gray-300">Nivel:</span>
+                      <span className="px-3 py-1 bg-blue-900 text-blue-300 text-sm font-semibold rounded-full">{classifyResult.level}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-300">Pilares:</span>
+                      {classifyResult.pillars.map(p => (
+                        <span key={p} className="px-2 py-1 bg-purple-900 text-purple-300 text-xs rounded">{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">Voce pode alterar os valores no formulario apos confirmar</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowClassifyModal(false)} className="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg font-medium hover:bg-gray-600">Cancelar</button>
+                    <button onClick={confirmClassification} className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">Confirmar</button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

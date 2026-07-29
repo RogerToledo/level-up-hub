@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/me/level-up-hub/backend/config"
 	"github.com/me/level-up-hub/backend/internal/account"
+	"github.com/me/level-up-hub/backend/internal/ai"
 	"github.com/me/level-up-hub/backend/internal/api"
 	"github.com/me/level-up-hub/backend/internal/database"
 	"github.com/me/level-up-hub/backend/internal/initiative"
@@ -26,6 +27,7 @@ type RouterConfig struct {
 	InitiativeHandler  *initiative.InitiativeHandler
 	TaskHandler        *task.TaskHandler
 	LevelTargetHandler *leveltarget.Handler
+	AIHandler          *ai.Handler
 }
 
 func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *gin.Engine {
@@ -103,6 +105,9 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.POST("/tasks/:id/evidence", cfg.TaskHandler.AddEvidence)
 	protected.GET("/tasks/:id/evidences", cfg.TaskHandler.ListEvidences)
 	protected.DELETE("/evidences/:id", cfg.TaskHandler.DeleteEvidence)
+
+	// AI Classification
+	protected.POST("/tasks/classify", cfg.AIHandler.Classify)
 
 	// Dashboard & Reports
 	protected.GET("/dashboard", cfg.InitiativeHandler.GetDashboard)
