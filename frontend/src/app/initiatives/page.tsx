@@ -430,7 +430,7 @@ export default function InitiativesPage() {
                 <label htmlFor="is_extra" className="text-sm text-gray-300">Task extra (overdelivery)</label>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={openClassifyModal} className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all flex items-center gap-1">
+                <button type="button" disabled className="px-4 py-3 bg-gray-600 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-1 opacity-50" title="IA indisponivel no momento">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   IA
                 </button>
