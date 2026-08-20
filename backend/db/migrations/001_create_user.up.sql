@@ -1,19 +1,9 @@
-DO $$ BEGIN
-    CREATE TYPE ladder_level AS ENUM ('P1', 'P2', 'P3', 'LT1', 'LT2', 'LT3', 'LT4');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE pillar AS ENUM ('TECHNICAL', 'RESULTS', 'INFLUENCE');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE ladder_level AS ENUM ('P1', 'P2', 'P3', 'LT1', 'LT2', 'LT3', 'LT4');
+CREATE TYPE pillar AS ENUM ('TECHNICAL', 'RESULTS', 'INFLUENCE');
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-DO $$ BEGIN
-    CREATE TYPE user_role AS ENUM ('user', 'admin');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE user_role AS ENUM ('user', 'admin');
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

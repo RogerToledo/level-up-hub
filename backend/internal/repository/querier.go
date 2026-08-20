@@ -56,6 +56,7 @@ type Querier interface {
 	UpdateLadderLevel(ctx context.Context, arg UpdateLadderLevelParams) error
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
+	UpdateTaskEvidence(ctx context.Context, arg UpdateTaskEvidenceParams) (TaskEvidence, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpsertLevelTarget(ctx context.Context, arg UpsertLevelTargetParams) (LevelTarget, error)
 }

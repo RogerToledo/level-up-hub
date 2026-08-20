@@ -56,6 +56,7 @@ export default function InitiativesPage() {
   const [evidenceTaskId, setEvidenceTaskId] = useState("");
   const [evidences, setEvidences] = useState<TaskEvidence[]>([]);
   const [evidenceForm, setEvidenceForm] = useState({ url: "", description: "" });
+  const [editingEvidence, setEditingEvidence] = useState<TaskEvidence | null>(null);
   // View state
   const [showViewInitModal, setShowViewInitModal] = useState(false);
   const [viewingInit, setViewingInit] = useState<Initiative | null>(null);
@@ -164,7 +165,7 @@ export default function InitiativesPage() {
 
   // Evidence
   const openEvidenceModal = async (taskId: string) => {
-    setEvidenceTaskId(taskId); setEvidenceForm({ url: "", description: "" }); setShowEvidenceModal(true);
+    setEvidenceTaskId(taskId); setEvidenceForm({ url: "", description: "" }); setEditingEvidence(null); setShowEvidenceModal(true);
     try { const r = await api.get(`/tasks/${taskId}/evidences`); setEvidences(Array.isArray(r) ? r : []); } catch { setEvidences([]); }
   };
   const handleAddEvidence = async () => {
@@ -172,12 +173,31 @@ export default function InitiativesPage() {
     try { new URL(evidenceForm.url); } catch { toast("URL invalida", "warning"); return; }
     setSubmitting(true);
     try {
-      await api.post(`/tasks/${evidenceTaskId}/evidence`, { url: evidenceForm.url, description: evidenceForm.description || undefined });
+      if (editingEvidence) {
+        await api.put(`/evidences/${editingEvidence.id}`, { url: evidenceForm.url, description: evidenceForm.description || undefined });
+        toast("Evidencia atualizada!");
+      } else {
+        await api.post(`/tasks/${evidenceTaskId}/evidence`, { url: evidenceForm.url, description: evidenceForm.description || undefined });
+        toast("Evidencia adicionada!");
+      }
       setEvidenceForm({ url: "", description: "" });
+      setEditingEvidence(null);
       const r = await api.get(`/tasks/${evidenceTaskId}/evidences`); setEvidences(Array.isArray(r) ? r : []);
       if (expandedId) fetchTasks(expandedId);
-      toast("Evidencia adicionada!");
-    } catch { toast("Erro ao adicionar evidencia.", "error"); } finally { setSubmitting(false); }
+    } catch { toast("Erro ao salvar evidencia.", "error"); } finally { setSubmitting(false); }
+  };
+  const handleEditEvidence = (ev: TaskEvidence) => {
+    setEditingEvidence(ev);
+    setEvidenceForm({ url: ev.evidence_url, description: ev.description || "" });
+  };
+  const handleDeleteEvidence = async (evidenceId: string) => {
+    if (!confirm("Deletar esta evidencia?")) return;
+    try {
+      await api.delete(`/evidences/${evidenceId}`);
+      setEvidences(prev => prev.filter(e => e.id !== evidenceId));
+      if (expandedId) fetchTasks(expandedId);
+      toast("Evidencia deletada!");
+    } catch { toast("Erro ao deletar evidencia.", "error"); }
   };
 
   const handlePillarToggle = (pillar: string) => {
@@ -539,7 +559,12 @@ export default function InitiativesPage() {
               <div className="bg-gray-700 p-4 rounded-lg space-y-3">
                 <input type="url" value={evidenceForm.url} onChange={(e) => setEvidenceForm({ ...evidenceForm, url: e.target.value })} className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://..." />
                 <input type="text" value={evidenceForm.description} onChange={(e) => setEvidenceForm({ ...evidenceForm, description: e.target.value })} className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Descricao (opcional)" />
-                <button onClick={handleAddEvidence} disabled={submitting} className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">{submitting ? "Adicionando..." : "Adicionar Evidencia"}</button>
+                <div className="flex gap-2">
+                  {editingEvidence && (
+                    <button onClick={() => { setEditingEvidence(null); setEvidenceForm({ url: "", description: "" }); }} className="px-4 py-2 bg-gray-600 text-gray-300 rounded-lg text-sm hover:bg-gray-500">Cancelar</button>
+                  )}
+                  <button onClick={handleAddEvidence} disabled={submitting} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">{submitting ? "Salvando..." : editingEvidence ? "Atualizar" : "Adicionar"}</button>
+                </div>
               </div>
               {evidences.length > 0 ? (
                 <div className="space-y-2">
@@ -549,6 +574,14 @@ export default function InitiativesPage() {
                       <div className="flex-1 min-w-0">
                         <a href={ev.evidence_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm break-all">{ev.evidence_url}</a>
                         {ev.description && <p className="text-xs text-gray-400 mt-1">{ev.description}</p>}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => handleEditEvidence(ev)} className="p-1 text-gray-400 hover:text-white rounded" title="Editar">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        <button onClick={() => handleDeleteEvidence(ev.id)} className="p-1 text-gray-400 hover:text-red-400 rounded" title="Deletar">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
                       </div>
                     </div>
                   ))}

@@ -1,7 +1,20 @@
 version: "2"
 sql:
-  - schema: "db/migrations/*.sql"
-    queries: "db/queries/*.sql"
+  - schema:
+      - "db/migrations/001_create_user.up.sql"
+      - "db/migrations/002_create_career_ladder.up.sql"
+      - "db/migrations/003_create_activies.up.sql"
+      - "db/migrations/004_create_xp_target.up.sql"
+      - "db/migrations/005_create_evaluetion_cycles.up.sql"
+      - "db/migrations/006_add_performance_indexes.up.sql"
+      - "db/migrations/007_add_manager_fields.up.sql"
+      - "db/migrations/008_rename_activities_to_initiatives.up.sql"
+      - "db/migrations/009_move_fields_to_tasks.up.sql"
+      - "db/migrations/010_rename_xp_target_to_level_target.up.sql"
+      - "db/migrations/011_change_level_target_to_use_level_enum.up.sql"
+      - "db/migrations/012_add_user_id_to_level_target.up.sql"
+      - "db/migrations/013_add_is_extra_to_tasks.up.sql"
+    queries: "db/queries/"
     engine: "postgresql"
     gen:
       go:

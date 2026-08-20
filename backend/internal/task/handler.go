@@ -169,3 +169,28 @@ func (h *TaskHandler) DeleteEvidence(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *TaskHandler) UpdateEvidence(c *gin.Context) {
+	evidenceID, err := identity.ValidateIDParam(c)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	var input struct {
+		URL         string `json:"url" binding:"required,url"`
+		Description string `json:"description"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		rest.Error(c.Writer, http.StatusBadRequest, apperr.ErrBadRequest, err)
+		return
+	}
+
+	evidence, err := h.service.UpdateEvidence(c.Request.Context(), evidenceID, input.URL, input.Description)
+	if err != nil {
+		rest.Error(c.Writer, http.StatusInternalServerError, apperr.ErrInternalServerError, err)
+		return
+	}
+
+	rest.Send(c.Writer, evidence, http.StatusOK)
+}

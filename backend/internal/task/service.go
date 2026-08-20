@@ -172,6 +172,20 @@ func (s *Service) DeleteEvidence(ctx context.Context, evidenceID uuid.UUID) erro
 	return s.repo.DeleteTaskEvidence(ctx, evidenceID)
 }
 
+func (s *Service) UpdateEvidence(ctx context.Context, evidenceID uuid.UUID, url string, description string) (repository.TaskEvidence, error) {
+	params := repository.UpdateTaskEvidenceParams{
+		ID:          evidenceID,
+		EvidenceUrl: url,
+		Description: pgtype.Text{String: description, Valid: description != ""},
+	}
+	evidence, err := s.repo.UpdateTaskEvidence(ctx, params)
+	if err != nil {
+		slog.Error("failed to update task evidence", slog.String("error", err.Error()))
+		return repository.TaskEvidence{}, apperr.MessageError(fmt.Sprintf(apperr.ErrUpdate, apperr.EvidencePT), err)
+	}
+	return evidence, nil
+}
+
 func (s *Service) recalculateInitiativeProgress(ctx context.Context, initiativeID uuid.UUID) error {
 	avg, err := s.repo.CalculateInitiativeProgress(ctx, initiativeID)
 	if err != nil {

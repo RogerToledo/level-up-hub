@@ -104,6 +104,7 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	// Task evidences
 	protected.POST("/tasks/:id/evidence", cfg.TaskHandler.AddEvidence)
 	protected.GET("/tasks/:id/evidences", cfg.TaskHandler.ListEvidences)
+	protected.PUT("/evidences/:id", cfg.TaskHandler.UpdateEvidence)
 	protected.DELETE("/evidences/:id", cfg.TaskHandler.DeleteEvidence)
 
 	// AI Classification

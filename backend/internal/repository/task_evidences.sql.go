@@ -78,3 +78,29 @@ func (q *Queries) ListEvidencesByTask(ctx context.Context, taskID uuid.UUID) ([]
 	}
 	return items, nil
 }
+
+const updateTaskEvidence = `-- name: UpdateTaskEvidence :one
+UPDATE task_evidences
+SET evidence_url = $2, description = $3
+WHERE id = $1
+RETURNING id, task_id, evidence_url, description, created_at
+`
+
+type UpdateTaskEvidenceParams struct {
+	ID          uuid.UUID   `json:"id"`
+	EvidenceUrl string      `json:"evidence_url"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) UpdateTaskEvidence(ctx context.Context, arg UpdateTaskEvidenceParams) (TaskEvidence, error) {
+	row := q.db.QueryRow(ctx, updateTaskEvidence, arg.ID, arg.EvidenceUrl, arg.Description)
+	var i TaskEvidence
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.EvidenceUrl,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return i, err
+}

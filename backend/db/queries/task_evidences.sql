@@ -9,5 +9,11 @@ FROM task_evidences
 WHERE task_id = $1
 ORDER BY created_at DESC;
 
+-- name: UpdateTaskEvidence :one
+UPDATE task_evidences
+SET evidence_url = $2, description = $3
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteTaskEvidence :exec
 DELETE FROM task_evidences WHERE id = $1;
