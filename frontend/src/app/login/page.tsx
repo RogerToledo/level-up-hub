@@ -16,6 +16,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log("URL da API:", process.env.NEXT_PUBLIC_API_URL);
 
     try {
       const response = await api.post("/login", { email, password });
