@@ -15,6 +15,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/initiative"
 	"github.com/me/level-up-hub/backend/internal/ladder"
 	"github.com/me/level-up-hub/backend/internal/leveltarget"
+	"github.com/me/level-up-hub/backend/internal/plan"
 	"github.com/me/level-up-hub/backend/internal/task"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -28,6 +29,7 @@ type RouterConfig struct {
 	TaskHandler        *task.TaskHandler
 	LevelTargetHandler *leveltarget.Handler
 	AIHandler          *ai.Handler
+	PlanHandler        *plan.Handler
 }
 
 func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *gin.Engine {
@@ -128,6 +130,16 @@ func NewRouter(cfg RouterConfig, dbPool *pgxpool.Pool, appCfg *config.Config) *g
 	protected.GET("/level-target", cfg.LevelTargetHandler.GetTarget)
 	protected.GET("/level-targets", cfg.LevelTargetHandler.ListTargets)
 	protected.DELETE("/level-targets/:id", cfg.LevelTargetHandler.DeleteTarget)
+
+	// Plans
+	protected.POST("/plans", cfg.PlanHandler.Create)
+	protected.GET("/plans", cfg.PlanHandler.List)
+	protected.GET("/plans/:id", cfg.PlanHandler.FindByID)
+	protected.PUT("/plans/:id", cfg.PlanHandler.Update)
+	protected.DELETE("/plans/:id", cfg.PlanHandler.Delete)
+	protected.PUT("/plans/:id/reorder", cfg.PlanHandler.Reorder)
+	protected.PUT("/plans/:id/move-up", cfg.PlanHandler.MoveUp)
+	protected.PUT("/plans/:id/move-down", cfg.PlanHandler.MoveDown)
 
 	// Admin-only routes
 	admin := protected.Group("/")

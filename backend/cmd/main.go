@@ -20,6 +20,7 @@ import (
 	"github.com/me/level-up-hub/backend/internal/ladder"
 	"github.com/me/level-up-hub/backend/internal/leveltarget"
 	"github.com/me/level-up-hub/backend/internal/logger"
+	"github.com/me/level-up-hub/backend/internal/plan"
 	"github.com/me/level-up-hub/backend/internal/repository"
 	"github.com/me/level-up-hub/backend/internal/task"
 	"github.com/me/level-up-hub/backend/routes"
@@ -87,6 +88,7 @@ func main() {
 	taskService := task.NewService(repo, dbPool)
 	emailService := email.NewService(cfg)
 	aiService := ai.NewService(cfg, repo)
+	planService := plan.NewService(repo)
 
 	// Handlers
 	accountHandler := account.NewHandler(accountService, cfg)
@@ -95,6 +97,7 @@ func main() {
 	initiativeHandler := initiative.NewHandler(initiativeService, cfg, emailService)
 	taskHandler := task.NewHandler(taskService, cfg)
 	aiHandler := ai.NewHandler(aiService)
+	planHandler := plan.NewHandler(planService)
 
 	r := routes.NewRouter(routes.RouterConfig{
 		UserHandler:        accountHandler,
@@ -103,6 +106,7 @@ func main() {
 		InitiativeHandler:  initiativeHandler,
 		TaskHandler:        taskHandler,
 		AIHandler:          aiHandler,
+		PlanHandler:        planHandler,
 	}, dbPool, cfg)
 
 	srv := &http.Server{

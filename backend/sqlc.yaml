@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - schema:
+  -     schema:
       - "db/migrations/001_create_user.up.sql"
       - "db/migrations/002_create_career_ladder.up.sql"
       - "db/migrations/003_create_activies.up.sql"
@@ -14,6 +14,8 @@ sql:
       - "db/migrations/011_change_level_target_to_use_level_enum.up.sql"
       - "db/migrations/012_add_user_id_to_level_target.up.sql"
       - "db/migrations/013_add_is_extra_to_tasks.up.sql"
+      - "db/migrations/014_create_plans.up.sql"
+      - "db/migrations/015_add_position_to_plans.up.sql"
     queries: "db/queries/"
     engine: "postgresql"
     gen:

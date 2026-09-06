@@ -180,6 +180,19 @@ type LevelTarget struct {
 	UserID pgtype.UUID `json:"user_id"`
 }
 
+type Plan struct {
+	ID           uuid.UUID   `json:"id"`
+	UserID       uuid.UUID   `json:"user_id"`
+	Title        string      `json:"title"`
+	Description  pgtype.Text `json:"description"`
+	InitiativeID pgtype.UUID `json:"initiative_id"`
+	LevelTarget  pgtype.Text `json:"level_target"`
+	Status       string      `json:"status"`
+	Position     int32       `json:"position"`
+	CreatedAt    pgtype.Date `json:"created_at"`
+	UpdatedAt    pgtype.Date `json:"updated_at"`
+}
+
 type Task struct {
 	ID                 uuid.UUID   `json:"id"`
 	InitiativeID       uuid.UUID   `json:"initiative_id"`

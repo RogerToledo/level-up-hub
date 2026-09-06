@@ -15,9 +15,11 @@ type Querier interface {
 	CalculateInitiativeProgress(ctx context.Context, initiativeID uuid.UUID) (int32, error)
 	CountAllUsers(ctx context.Context) (int64, error)
 	CountUserInitiatives(ctx context.Context, userID uuid.UUID) (int64, error)
+	CountUserPlans(ctx context.Context, userID uuid.UUID) (int64, error)
 	CreateInitiative(ctx context.Context, arg CreateInitiativeParams) (Initiative, error)
 	CreateLadderLevel(ctx context.Context, arg CreateLadderLevelParams) (CareerLadder, error)
 	CreateLevelTarget(ctx context.Context, arg CreateLevelTargetParams) (LevelTarget, error)
+	CreatePlan(ctx context.Context, arg CreatePlanParams) (Plan, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateTaskEvidence(ctx context.Context, arg CreateTaskEvidenceParams) (TaskEvidence, error)
 	CreateTaskPillar(ctx context.Context, arg CreateTaskPillarParams) (TaskPillar, error)
@@ -25,6 +27,7 @@ type Querier interface {
 	DeleteInitiative(ctx context.Context, arg DeleteInitiativeParams) error
 	DeleteLadderLevel(ctx context.Context, id uuid.UUID) error
 	DeleteLevelTarget(ctx context.Context, arg DeleteLevelTargetParams) error
+	DeletePlan(ctx context.Context, arg DeletePlanParams) error
 	DeleteTask(ctx context.Context, id uuid.UUID) error
 	DeleteTaskEvidence(ctx context.Context, id uuid.UUID) error
 	DeleteTaskPillars(ctx context.Context, taskID uuid.UUID) error
@@ -42,6 +45,9 @@ type Querier interface {
 	FindLevelTargetByUserAndYear(ctx context.Context, arg FindLevelTargetByUserAndYearParams) (FindLevelTargetByUserAndYearRow, error)
 	FindPdiDashboard(ctx context.Context, userID uuid.UUID) ([]FindPdiDashboardRow, error)
 	FindPerformanceByPeriod(ctx context.Context, arg FindPerformanceByPeriodParams) ([]FindPerformanceByPeriodRow, error)
+	FindPlanByID(ctx context.Context, arg FindPlanByIDParams) (Plan, error)
+	FindPlanByPosition(ctx context.Context, arg FindPlanByPositionParams) (Plan, error)
+	FindPlanByTitle(ctx context.Context, arg FindPlanByTitleParams) (Plan, error)
 	FindPreviousCycle(ctx context.Context, endDate pgtype.Date) (EvaluationCycle, error)
 	FindTaskByID(ctx context.Context, id uuid.UUID) (FindTaskByIDRow, error)
 	FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error)
@@ -52,9 +58,12 @@ type Querier interface {
 	ListLevelTargetsByUser(ctx context.Context, userID pgtype.UUID) ([]ListLevelTargetsByUserRow, error)
 	ListTasksByInitiative(ctx context.Context, initiativeID uuid.UUID) ([]ListTasksByInitiativeRow, error)
 	ListUserInitiatives(ctx context.Context, userID uuid.UUID) ([]ListUserInitiativesRow, error)
+	ListUserPlans(ctx context.Context, userID uuid.UUID) ([]ListUserPlansRow, error)
+	ReorderPlan(ctx context.Context, arg ReorderPlanParams) error
 	UpdateInitiative(ctx context.Context, arg UpdateInitiativeParams) (Initiative, error)
 	UpdateLadderLevel(ctx context.Context, arg UpdateLadderLevelParams) error
 	UpdateLadderXP(ctx context.Context, arg UpdateLadderXPParams) error
+	UpdatePlan(ctx context.Context, arg UpdatePlanParams) (Plan, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateTaskEvidence(ctx context.Context, arg UpdateTaskEvidenceParams) (TaskEvidence, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

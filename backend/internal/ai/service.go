@@ -1,25 +1,28 @@
 package ai
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	"github.com/me/level-up-hub/backend/config"
 	"github.com/me/level-up-hub/backend/internal/repository"
-	"google.golang.org/genai"
 )
 
 type Service struct {
-	client *genai.Client
+	apiKey string
 	repo   *repository.Queries
 }
 
 type ClassifyRequest struct {
-	Title     string `json:"title" binding:"required"`
-	Execution string `json:"execution"`
+	Title         string `json:"title" binding:"required"`
+	Execution     string `json:"execution"`
+	ImpactSummary string `json:"impact_summary"`
 }
 
 type ClassifyResponse struct {
@@ -27,27 +30,47 @@ type ClassifyResponse struct {
 	Pillars []string `json:"pillars"`
 }
 
+type openRouterRequest struct {
+	Model    string          `json:"model"`
+	Messages []openRouterMsg `json:"messages"`
+	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+}
+
+type openRouterMsg struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type responseFormat struct {
+	Type string `json:"type"`
+}
+
+type openRouterResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+}
+
 func NewService(cfg *config.Config, repo *repository.Queries) *Service {
-	if cfg.GeminiAPIKey == "" {
-		slog.Warn("Gemini API key not configured, AI classification will not work")
+	// Check both OPENROUTER_API_KEY and OPENAI_API_KEY
+	apiKey := cfg.OpenRouterAPIKey
+	if apiKey == "" {
+		apiKey = cfg.OpenAIAPIKey
+	}
+
+	if apiKey == "" {
+		slog.Warn("OpenRouter API key not configured, AI classification will not work")
 		return &Service{repo: repo}
 	}
 
-	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
-		APIKey:  cfg.GeminiAPIKey,
-		Backend: genai.BackendGeminiAPI,
-	})
-	if err != nil {
-		slog.Error("failed to create Gemini client", slog.String("error", err.Error()))
-		return &Service{repo: repo}
-	}
-
-	return &Service{client: client, repo: repo}
+	return &Service{apiKey: apiKey, repo: repo}
 }
 
 func (s *Service) ClassifyTask(ctx context.Context, req ClassifyRequest) (*ClassifyResponse, error) {
-	if s.client == nil {
-		return nil, fmt.Errorf("Gemini API key not configured")
+	if s.apiKey == "" {
+		return nil, fmt.Errorf("OpenRouter API key not configured")
 	}
 
 	// Fetch career ladder from DB
@@ -64,29 +87,70 @@ func (s *Service) ClassifyTask(ctx context.Context, req ClassifyRequest) (*Class
 	if req.Execution != "" {
 		userPrompt += fmt.Sprintf("\nExecucao (o que foi feito): %s", req.Execution)
 	}
+	if req.ImpactSummary != "" {
+		userPrompt += fmt.Sprintf("\nResumo do Impacto: %s", req.ImpactSummary)
+	}
 
-	// Call Gemini
-	result, err := s.client.Models.GenerateContent(ctx,
-		"gemini-2.0-flash",
-		genai.Text(userPrompt),
-		&genai.GenerateContentConfig{
-			SystemInstruction: &genai.Content{
-				Parts: []*genai.Part{{Text: systemPrompt}},
-			},
-			ResponseMIMEType: "application/json",
-			Temperature:      genai.Ptr[float32](0.2),
+	// Build OpenRouter request
+	reqBody := openRouterRequest{
+		Model: "xiaomi/mimo-v2.5",
+		Messages: []openRouterMsg{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userPrompt},
 		},
-	)
+		ResponseFormat: &responseFormat{Type: "json_object"},
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		slog.Error("Gemini API call failed", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("failed to classify task: %w", err)
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Call OpenRouter API
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+s.apiKey)
+	httpReq.Header.Set("HTTP-Referer", "https://leveluphub.com")
+	httpReq.Header.Set("X-Title", "Level Up Hub")
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		slog.Error("OpenRouter API call failed", slog.String("error", err.Error()))
+		return nil, fmt.Errorf("failed to call AI API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("OpenRouter API error", slog.Int("status", resp.StatusCode), slog.String("body", string(body)))
+		return nil, fmt.Errorf("AI API returned status %d", resp.StatusCode)
 	}
 
 	// Parse response
-	text := result.Text()
+	var openResp openRouterResponse
+	if err := json.Unmarshal(body, &openResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if len(openResp.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in response")
+	}
+
+	content := openResp.Choices[0].Message.Content
+
+	// Parse the JSON response
 	var response ClassifyResponse
-	if err := json.Unmarshal([]byte(text), &response); err != nil {
-		slog.Error("failed to parse Gemini response", slog.String("text", text), slog.String("error", err.Error()))
+	if err := json.Unmarshal([]byte(content), &response); err != nil {
+		slog.Error("failed to parse AI response", slog.String("text", content), slog.String("error", err.Error()))
 		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
 

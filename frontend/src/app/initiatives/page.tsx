@@ -66,7 +66,7 @@ export default function InitiativesPage() {
   // AI Classification state
   const [showClassifyModal, setShowClassifyModal] = useState(false);
   const [classifying, setClassifying] = useState(false);
-  const [classifyForm, setClassifyForm] = useState({ title: "", execution: "" });
+  const [classifyForm, setClassifyForm] = useState({ title: "", execution: "", impact_summary: "" });
   const [classifyResult, setClassifyResult] = useState<{ level: string; pillars: string[] } | null>(null);
 
   useEffect(() => { fetchInitiatives(); fetchLadders(); }, []);
@@ -205,7 +205,7 @@ export default function InitiativesPage() {
   };
 
   const openClassifyModal = () => {
-    setClassifyForm({ title: taskForm.title, execution: taskForm.execution });
+    setClassifyForm({ title: taskForm.title, execution: taskForm.execution, impact_summary: taskForm.impact_summary });
     setClassifyResult(null);
     setShowClassifyModal(true);
   };
@@ -214,7 +214,11 @@ export default function InitiativesPage() {
     if (!classifyForm.title.trim()) { toast("Preencha o titulo para classificar", "warning"); return; }
     setClassifying(true);
     try {
-      const result = await api.post("/tasks/classify", { title: classifyForm.title, execution: classifyForm.execution || undefined });
+      const result = await api.post("/tasks/classify", { 
+        title: classifyForm.title, 
+        execution: classifyForm.execution || undefined,
+        impact_summary: classifyForm.impact_summary || undefined
+      });
       setClassifyResult(result as { level: string; pillars: string[] });
     } catch {
       toast("Erro ao classificar. Tente novamente.", "error");
@@ -430,7 +434,7 @@ export default function InitiativesPage() {
                 <label htmlFor="is_extra" className="text-sm text-gray-300">Task extra (overdelivery)</label>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" disabled className="px-4 py-3 bg-gray-600 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-1 opacity-50" title="IA indisponivel no momento">
+                <button type="button" onClick={openClassifyModal} className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center gap-1 hover:bg-purple-700" title="Use a IA para definir o nível da tarefa">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   IA
                 </button>
@@ -612,8 +616,12 @@ export default function InitiativesPage() {
                 <input type="text" value={classifyForm.title} onChange={(e) => setClassifyForm({ ...classifyForm, title: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="O que foi feito?" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Resultados / Execucao</label>
-                <textarea value={classifyForm.execution} onChange={(e) => setClassifyForm({ ...classifyForm, execution: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" rows={3} placeholder="Descreva os resultados obtidos..." />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Execucao</label>
+                <textarea value={classifyForm.execution} onChange={(e) => setClassifyForm({ ...classifyForm, execution: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" rows={3} placeholder="Descreva o que foi executado..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Resumo do Impacto</label>
+                <textarea value={classifyForm.impact_summary} onChange={(e) => setClassifyForm({ ...classifyForm, impact_summary: e.target.value })} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" rows={2} placeholder="Qual foi o impacto gerado?" />
               </div>
 
               {!classifyResult && (

@@ -45,6 +45,12 @@ type Config struct {
 
 	// Gemini AI
 	GeminiAPIKey string `env:"GEMINI_API_KEY" envDefault:""`
+
+	// OpenRouter AI
+	OpenRouterAPIKey string `env:"OPENROUTER_API_KEY" envDefault:""`
+
+	// Fallback: also accept OPENAI_API_KEY (OpenRouter keys start with sk-or-v1-)
+	OpenAIAPIKey string `env:"OPENAI_API_KEY" envDefault:""`
 }
 
 var (
